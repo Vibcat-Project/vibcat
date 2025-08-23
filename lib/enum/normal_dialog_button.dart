@@ -1,0 +1,1 @@
+enum NormalDialogButton { ok, cancel }
