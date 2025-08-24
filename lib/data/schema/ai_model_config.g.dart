@@ -37,24 +37,34 @@ const AIModelConfigSchema = CollectionSchema(
       name: r'endPoint',
       type: IsarType.string,
     ),
-    r'provider': PropertySchema(
+    r'hasModels': PropertySchema(
       id: 4,
+      name: r'hasModels',
+      type: IsarType.bool,
+    ),
+    r'modelsJson': PropertySchema(
+      id: 5,
+      name: r'modelsJson',
+      type: IsarType.string,
+    ),
+    r'provider': PropertySchema(
+      id: 6,
       name: r'provider',
       type: IsarType.string,
       enumMap: _AIModelConfigproviderEnumValueMap,
     ),
     r'tokenInput': PropertySchema(
-      id: 5,
+      id: 7,
       name: r'tokenInput',
       type: IsarType.long,
     ),
     r'tokenOutput': PropertySchema(
-      id: 6,
+      id: 8,
       name: r'tokenOutput',
       type: IsarType.long,
     ),
     r'updatedAt': PropertySchema(
-      id: 7,
+      id: 9,
       name: r'updatedAt',
       type: IsarType.dateTime,
     )
@@ -82,6 +92,12 @@ int _aIModelConfigEstimateSize(
   bytesCount += 3 + object.apiKey.length * 3;
   bytesCount += 3 + object.customName.length * 3;
   bytesCount += 3 + object.endPoint.length * 3;
+  {
+    final value = object.modelsJson;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
   bytesCount += 3 + object.provider.name.length * 3;
   return bytesCount;
 }
@@ -96,10 +112,12 @@ void _aIModelConfigSerialize(
   writer.writeDateTime(offsets[1], object.createdAt);
   writer.writeString(offsets[2], object.customName);
   writer.writeString(offsets[3], object.endPoint);
-  writer.writeString(offsets[4], object.provider.name);
-  writer.writeLong(offsets[5], object.tokenInput);
-  writer.writeLong(offsets[6], object.tokenOutput);
-  writer.writeDateTime(offsets[7], object.updatedAt);
+  writer.writeBool(offsets[4], object.hasModels);
+  writer.writeString(offsets[5], object.modelsJson);
+  writer.writeString(offsets[6], object.provider.name);
+  writer.writeLong(offsets[7], object.tokenInput);
+  writer.writeLong(offsets[8], object.tokenOutput);
+  writer.writeDateTime(offsets[9], object.updatedAt);
 }
 
 AIModelConfig _aIModelConfigDeserialize(
@@ -108,19 +126,19 @@ AIModelConfig _aIModelConfigDeserialize(
   List<int> offsets,
   Map<Type, List<int>> allOffsets,
 ) {
-  final object = AIModelConfig(
-    apiKey: reader.readString(offsets[0]),
-    customName: reader.readString(offsets[2]),
-    endPoint: reader.readString(offsets[3]),
-    provider: _AIModelConfigproviderValueEnumMap[
-            reader.readStringOrNull(offsets[4])] ??
-        AIProviderType.openAI,
-  );
+  final object = AIModelConfig();
+  object.apiKey = reader.readString(offsets[0]);
   object.createdAt = reader.readDateTime(offsets[1]);
+  object.customName = reader.readString(offsets[2]);
+  object.endPoint = reader.readString(offsets[3]);
   object.id = id;
-  object.tokenInput = reader.readLong(offsets[5]);
-  object.tokenOutput = reader.readLong(offsets[6]);
-  object.updatedAt = reader.readDateTime(offsets[7]);
+  object.modelsJson = reader.readStringOrNull(offsets[5]);
+  object.provider =
+      _AIModelConfigproviderValueEnumMap[reader.readStringOrNull(offsets[6])] ??
+          AIProviderType.openAI;
+  object.tokenInput = reader.readLong(offsets[7]);
+  object.tokenOutput = reader.readLong(offsets[8]);
+  object.updatedAt = reader.readDateTime(offsets[9]);
   return object;
 }
 
@@ -140,14 +158,18 @@ P _aIModelConfigDeserializeProp<P>(
     case 3:
       return (reader.readString(offset)) as P;
     case 4:
+      return (reader.readBool(offset)) as P;
+    case 5:
+      return (reader.readStringOrNull(offset)) as P;
+    case 6:
       return (_AIModelConfigproviderValueEnumMap[
               reader.readStringOrNull(offset)] ??
           AIProviderType.openAI) as P;
-    case 5:
-      return (reader.readLong(offset)) as P;
-    case 6:
-      return (reader.readLong(offset)) as P;
     case 7:
+      return (reader.readLong(offset)) as P;
+    case 8:
+      return (reader.readLong(offset)) as P;
+    case 9:
       return (reader.readDateTime(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -739,6 +761,16 @@ extension AIModelConfigQueryFilter
     });
   }
 
+  QueryBuilder<AIModelConfig, AIModelConfig, QAfterFilterCondition>
+      hasModelsEqualTo(bool value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'hasModels',
+        value: value,
+      ));
+    });
+  }
+
   QueryBuilder<AIModelConfig, AIModelConfig, QAfterFilterCondition> idEqualTo(
       Id value) {
     return QueryBuilder.apply(this, (query) {
@@ -789,6 +821,160 @@ extension AIModelConfigQueryFilter
         includeLower: includeLower,
         upper: upper,
         includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<AIModelConfig, AIModelConfig, QAfterFilterCondition>
+      modelsJsonIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'modelsJson',
+      ));
+    });
+  }
+
+  QueryBuilder<AIModelConfig, AIModelConfig, QAfterFilterCondition>
+      modelsJsonIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'modelsJson',
+      ));
+    });
+  }
+
+  QueryBuilder<AIModelConfig, AIModelConfig, QAfterFilterCondition>
+      modelsJsonEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'modelsJson',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AIModelConfig, AIModelConfig, QAfterFilterCondition>
+      modelsJsonGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'modelsJson',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AIModelConfig, AIModelConfig, QAfterFilterCondition>
+      modelsJsonLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'modelsJson',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AIModelConfig, AIModelConfig, QAfterFilterCondition>
+      modelsJsonBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'modelsJson',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AIModelConfig, AIModelConfig, QAfterFilterCondition>
+      modelsJsonStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'modelsJson',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AIModelConfig, AIModelConfig, QAfterFilterCondition>
+      modelsJsonEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'modelsJson',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AIModelConfig, AIModelConfig, QAfterFilterCondition>
+      modelsJsonContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'modelsJson',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AIModelConfig, AIModelConfig, QAfterFilterCondition>
+      modelsJsonMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'modelsJson',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AIModelConfig, AIModelConfig, QAfterFilterCondition>
+      modelsJsonIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'modelsJson',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<AIModelConfig, AIModelConfig, QAfterFilterCondition>
+      modelsJsonIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'modelsJson',
+        value: '',
       ));
     });
   }
@@ -1157,6 +1343,32 @@ extension AIModelConfigQuerySortBy
     });
   }
 
+  QueryBuilder<AIModelConfig, AIModelConfig, QAfterSortBy> sortByHasModels() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'hasModels', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AIModelConfig, AIModelConfig, QAfterSortBy>
+      sortByHasModelsDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'hasModels', Sort.desc);
+    });
+  }
+
+  QueryBuilder<AIModelConfig, AIModelConfig, QAfterSortBy> sortByModelsJson() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'modelsJson', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AIModelConfig, AIModelConfig, QAfterSortBy>
+      sortByModelsJsonDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'modelsJson', Sort.desc);
+    });
+  }
+
   QueryBuilder<AIModelConfig, AIModelConfig, QAfterSortBy> sortByProvider() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'provider', Sort.asc);
@@ -1263,6 +1475,19 @@ extension AIModelConfigQuerySortThenBy
     });
   }
 
+  QueryBuilder<AIModelConfig, AIModelConfig, QAfterSortBy> thenByHasModels() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'hasModels', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AIModelConfig, AIModelConfig, QAfterSortBy>
+      thenByHasModelsDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'hasModels', Sort.desc);
+    });
+  }
+
   QueryBuilder<AIModelConfig, AIModelConfig, QAfterSortBy> thenById() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'id', Sort.asc);
@@ -1272,6 +1497,19 @@ extension AIModelConfigQuerySortThenBy
   QueryBuilder<AIModelConfig, AIModelConfig, QAfterSortBy> thenByIdDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'id', Sort.desc);
+    });
+  }
+
+  QueryBuilder<AIModelConfig, AIModelConfig, QAfterSortBy> thenByModelsJson() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'modelsJson', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AIModelConfig, AIModelConfig, QAfterSortBy>
+      thenByModelsJsonDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'modelsJson', Sort.desc);
     });
   }
 
@@ -1357,6 +1595,19 @@ extension AIModelConfigQueryWhereDistinct
     });
   }
 
+  QueryBuilder<AIModelConfig, AIModelConfig, QDistinct> distinctByHasModels() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'hasModels');
+    });
+  }
+
+  QueryBuilder<AIModelConfig, AIModelConfig, QDistinct> distinctByModelsJson(
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'modelsJson', caseSensitive: caseSensitive);
+    });
+  }
+
   QueryBuilder<AIModelConfig, AIModelConfig, QDistinct> distinctByProvider(
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
@@ -1413,6 +1664,18 @@ extension AIModelConfigQueryProperty
   QueryBuilder<AIModelConfig, String, QQueryOperations> endPointProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'endPoint');
+    });
+  }
+
+  QueryBuilder<AIModelConfig, bool, QQueryOperations> hasModelsProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'hasModels');
+    });
+  }
+
+  QueryBuilder<AIModelConfig, String?, QQueryOperations> modelsJsonProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'modelsJson');
     });
   }
 

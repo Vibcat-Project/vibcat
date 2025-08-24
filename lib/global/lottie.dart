@@ -1,15 +1,14 @@
 import 'package:flutter/widgets.dart';
 
-class AppLottie {
-  static const path = 'assets/lotties/';
+import '../widget/lottie_wrap.dart';
 
-  static const loading = '${path}loading.json';
+class AppLottie {
+  static const path = 'assets/lotties';
+
+  static const loading = '$path/loading.json';
 
   static Widget loadingWidget() => const Center(
-        child: SizedBox(
-          width: 150,
-          height: 150,
-          // child: LottieWrap(name: loading),
-        ),
-      );
+    // w:h = 9:5
+    child: SizedBox(width: 180, height: 100, child: LottieWrap(name: loading)),
+  );
 }

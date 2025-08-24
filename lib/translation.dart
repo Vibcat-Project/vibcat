@@ -15,7 +15,7 @@ class Translation extends Translations {
           'chatSettings': '对话设置',
           'otherSettings': '其他设置',
           'hapticFeedback': '触感反馈',
-          'addModel': '添加模型',
+          'addModelProvider': '添加模型服务商',
           'modelProvider': '模型服务商',
           'apiEndPoint': 'API 地址',
           'apiKey': 'API 密钥',
@@ -29,6 +29,7 @@ class Translation extends Translations {
           'ok': '确定',
           'cancel': '取消',
           'sureToDeleteAIModelConfig': '确定要删除这个模型服务商吗？',
+          'selectModels': '选择模型',
 
           'dataLoadFail': '数据获取失败辣！！',
         },

@@ -1,6 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:vibcat/data/bean/ai_model.dart';
-import 'package:vibcat/data/bean/chat_message.dart';
+import 'package:vibcat/data/schema/chat_message.dart';
 import 'package:vibcat/data/schema/ai_model_config.dart';
 
 import 'openai_request.dart';
@@ -16,14 +16,16 @@ abstract class AIRequestService {
   Future<List<AIModel>> getModelList({required AIModelConfig config});
 
   /// 流式返回
-  Stream<String> completions({
+  Stream<ChatMessage?> completions({
     required AIModelConfig config,
+    required AIModel model,
     required List<ChatMessage> history,
   });
 
   /// 一次性返回，非流式
   Future<ChatMessage> completionsOnce({
     required AIModelConfig config,
+    required AIModel model,
     required List<ChatMessage> history,
   });
 

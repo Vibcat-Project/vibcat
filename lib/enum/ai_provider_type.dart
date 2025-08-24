@@ -36,6 +36,7 @@ enum AIProviderType {
     plainName: '硅基流动',
     endPoint: 'https://api.siliconflow.cn/v1',
     icon: AppImage.providerSiliconFlow,
+    compatibleOpenAI: true,
   ),
   groq(
     plainName: 'Groq',

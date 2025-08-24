@@ -9,11 +9,11 @@ import '../../widget/auto_sized_page_view.dart';
 import 'logic.dart';
 import 'state.dart';
 
-class AddModelComponent extends StatelessWidget {
-  AddModelComponent({super.key});
+class AddModelProviderComponent extends StatelessWidget {
+  AddModelProviderComponent({super.key});
 
-  final AddModelLogic logic = Get.put(AddModelLogic());
-  final AddModelState state = Get.find<AddModelLogic>().state;
+  final AddModelProviderLogic logic = Get.put(AddModelProviderLogic());
+  final AddModelProviderState state = Get.find<AddModelProviderLogic>().state;
 
   Widget _pageHome() {
     return Column(
@@ -145,7 +145,7 @@ class AddModelComponent extends StatelessWidget {
                 shape: BoxShape.circle,
                 border: BoxBorder.all(color: GlobalStore.themeExt.border!),
               ),
-              child: ImageLoader(name: item.icon, size: 22),
+              child: ImageLoader(name: item.icon, size: 20),
             ),
             title: Text(item.plainName),
             onTap: () {

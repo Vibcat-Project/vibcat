@@ -23,3 +23,9 @@ class AIModel {
 
   Map<String, dynamic> toJson() => _$AIModelToJson(this);
 }
+
+extension AIModelDeepCopy on AIModel {
+  AIModel deepCopy() {
+    return AIModel(id: id, object: object, created: created, ownedBy: ownedBy);
+  }
+}

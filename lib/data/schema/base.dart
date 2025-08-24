@@ -1,6 +1,6 @@
 import 'package:isar/isar.dart';
 
-abstract class BaseCollection {
+abstract class BaseSchema {
   Id id = Isar.autoIncrement;
 
   DateTime createdAt = DateTime.now();

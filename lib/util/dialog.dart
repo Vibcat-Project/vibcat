@@ -17,7 +17,7 @@ class DialogUtil {
       snackPosition: SnackPosition.TOP,
       margin: EdgeInsets.symmetric(vertical: 10, horizontal: 30),
       borderRadius: 20,
-      backgroundColor: GlobalStore.theme.primaryColor,
+      backgroundColor: GlobalStore.theme.colorScheme.primary,
       colorText: AppColor.white,
       animationDuration: Duration(milliseconds: 500),
       overlayBlur: 8,

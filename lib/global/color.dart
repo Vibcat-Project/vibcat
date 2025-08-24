@@ -6,6 +6,7 @@ class AppColor {
   static const black = Colors.black;
   static const grey = Colors.grey;
   static const red = Colors.red;
+  static const orangeAccent = Colors.orangeAccent;
 
   static const primary = Color(0xFF4C4C4C);
 

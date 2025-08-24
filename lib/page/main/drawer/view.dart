@@ -57,6 +57,8 @@ class DrawerComponent extends StatelessWidget {
       padding: EdgeInsets.all(10),
       margin: EdgeInsets.fromLTRB(16, 0, 16, Get.mediaQuery.padding.bottom),
       child: GestureDetector(
+        // 支持空白区域也能响应点击事件
+        behavior: HitTestBehavior.translucent,
         child: Row(
           children: [
             Icon(AppIcon.settings, size: 32),

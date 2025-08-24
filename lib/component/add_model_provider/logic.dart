@@ -6,8 +6,8 @@ import '../../data/schema/ai_model_config.dart';
 import '../../route/route.dart';
 import 'state.dart';
 
-class AddModelLogic extends GetxController {
-  final AddModelState state = AddModelState();
+class AddModelProviderLogic extends GetxController {
+  final AddModelProviderState state = AddModelProviderState();
 
   final _repoDBApp = Get.find<AppDBRepository>();
 
@@ -21,7 +21,7 @@ class AddModelLogic extends GetxController {
     text: state.currentAIProvider.value.plainName,
   );
 
-  void save() {
+  void save() async {
     final apiEndPoint = teAPIEndPointController.text.trim();
     final apiKey = teAPIKeyController.text.trim();
     final customName = teCustomNameController.text.trim();
@@ -47,17 +47,14 @@ class AddModelLogic extends GetxController {
     }
 
     // 保存数据
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      final aiModelConfig = AIModelConfig(
-        provider: state.currentAIProvider.value,
-        endPoint: apiEndPoint,
-        apiKey: apiKey,
-        customName: customName,
-      );
+    final aiModelConfig = AIModelConfig()
+      ..provider = state.currentAIProvider.value
+      ..endPoint = apiEndPoint
+      ..apiKey = apiKey
+      ..customName = customName;
 
-      await _repoDBApp.insertAIModelConfig(aiModelConfig);
-      AppRoute.back(result: aiModelConfig);
-    });
+    await _repoDBApp.upsertAIModelConfig(aiModelConfig);
+    AppRoute.back(result: aiModelConfig);
   }
 
   @override

@@ -3,12 +3,14 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:markdown_widget/markdown_widget.dart';
+import 'package:vibcat/enum/chat_role.dart';
 import 'package:vibcat/global/color.dart';
-import 'package:vibcat/global/config.dart';
 import 'package:vibcat/global/icons.dart';
 import 'package:vibcat/global/markdown_config.dart';
 import 'package:vibcat/global/store.dart';
+import 'package:vibcat/widget/image_loader.dart';
 
+import '../../../util/app.dart';
 import '../logic.dart';
 import 'logic.dart';
 import 'state.dart';
@@ -23,8 +25,33 @@ class HomeComponent extends StatelessWidget {
   AppBar _appBar() {
     return AppBar(
       title: GestureDetector(
-        child: Text('Vibcat'),
-        onTap: () => logic.getModelList(),
+        child: Obx(
+          () => Container(
+            padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: GlobalStore.themeExt.container,
+              borderRadius: BorderRadius.circular(100),
+              border: BoxBorder.all(color: GlobalStore.themeExt.border!),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (state.currentAIModel.value != null) ...[
+                  ImageLoader(
+                    name: state.currentAIModelConfig.value?.provider.icon ?? '',
+                    size: 14,
+                  ),
+                  SizedBox(width: 10),
+                ],
+                Text(
+                  state.currentAIModel.value?.id ?? 'Vibcat',
+                  style: TextStyle(fontSize: 14),
+                ),
+              ],
+            ),
+          ),
+        ),
+        onTap: () => logic.selectModel(),
       ),
       leading: IconButton(
         onPressed: () => mainLogic.controlSlideDrawer(true),
@@ -55,59 +82,117 @@ class HomeComponent extends StatelessWidget {
       padding: EdgeInsets.fromLTRB(16, 0, 16, Get.mediaQuery.padding.bottom),
       child: ClipRRect(
         borderRadius: BorderRadius.vertical(bottom: Radius.circular(20)),
-        child: ListView.builder(
-          controller: logic.listViewController,
-          itemCount: 4,
-          itemBuilder: (context, index) {
-            if (index == 0 || index == 2) {
-              return Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  ConstrainedBox(
-                    constraints: BoxConstraints(maxWidth: Get.width * 0.8),
-                    child: Container(
-                      margin: EdgeInsets.symmetric(vertical: 6),
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: GlobalStore.themeExt.container,
-                        borderRadius: BorderRadius.circular(20),
-                        border: BoxBorder.all(
-                          color: GlobalStore.themeExt.border!,
+        child: Obx(
+          () => ListView.builder(
+            controller: logic.listViewController,
+            itemCount: state.chatMessage.length,
+            itemBuilder: (context, index) {
+              final item = state.chatMessage[index];
+
+              if (item.role == ChatRole.user) {
+                return Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    ConstrainedBox(
+                      constraints: BoxConstraints(maxWidth: Get.width * 0.8),
+                      child: Container(
+                        margin: EdgeInsets.symmetric(vertical: 6),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: GlobalStore.themeExt.container,
+                          borderRadius: BorderRadius.circular(20),
+                          border: BoxBorder.all(
+                            color: GlobalStore.themeExt.border!,
+                          ),
+                        ),
+                        child: Text(
+                          item.content ?? '',
+                          style: TextStyle(fontSize: 16),
                         ),
                       ),
-                      child: Text(
-                        '看啥客服加上发空间啊好疯狂了蝴蝶酥分即可恢复加上好疯狂就是对方可接受的发的啥开房间咖啡看啦凤凰科技大厦 asafagasgagadgadgadg 阿哥 昂啊好看就是发空间啊发的卡上',
-                        style: TextStyle(fontSize: 16),
+                    ),
+                  ],
+                );
+              }
+
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // 思考内容
+                  if (item.reasoning != null && item.reasoning!.isNotEmpty)
+                    Container(
+                      margin: EdgeInsets.only(top: 20),
+                      padding: EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: GlobalStore.themeExt.border,
+                        borderRadius: BorderRadius.circular(15),
+                      ),
+                      child: LayoutBuilder(
+                        builder: (context, constraints) {
+                          const double fontSize = 14;
+                          const double lineHeight = 1.4;
+                          const int maxLines = 4; // 最大显示行数
+                          final double maxHeight =
+                              fontSize * lineHeight * maxLines;
+
+                          return ShaderMask(
+                            shaderCallback: (Rect bounds) {
+                              return LinearGradient(
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                                colors: [
+                                  Colors.transparent, // 顶部透明（渐变开始）
+                                  Colors.black, // 中间完全可见
+                                  Colors.black, // 中间完全可见
+                                  Colors.transparent, // 底部透明（渐变结束）
+                                ],
+                                stops: [0.0, 0.4, 0.6, 1.0], // 控制渐变区间
+                              ).createShader(bounds);
+                            },
+                            blendMode: BlendMode.dstIn,
+                            child: Container(
+                              constraints: BoxConstraints(maxHeight: maxHeight),
+                              child: SingleChildScrollView(
+                                controller: logic.getReasoningScrollController(
+                                  index,
+                                ),
+                                physics: NeverScrollableScrollPhysics(),
+                                reverse: true, // 从下往上滚动
+                                child: SizedBox(
+                                  width: double.infinity,
+                                  child: Text(
+                                    item.reasoning!.trim(),
+                                    style: TextStyle(
+                                      fontSize: fontSize,
+                                      height: lineHeight,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          );
+                        },
                       ),
                     ),
-                  ),
-                ],
-              );
-            }
-
-            return Row(
-              mainAxisAlignment: MainAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: Container(
+                  Container(
                     margin: EdgeInsets.symmetric(vertical: 6),
                     padding: EdgeInsets.symmetric(vertical: 8),
+                    width: double.infinity,
                     child: MarkdownBlock(
-                      data: index == 1
-                          ? Config.markdownText2
-                          : Config.markdownText,
+                      data: item.content ?? '',
                       generator: MarkdownConfigs.generator,
                       config: MarkdownConfigs.config,
                       // style: TextStyle(fontSize: 16),
                     ),
                   ),
-                ),
-              ],
-            );
-          },
+                ],
+              );
+            },
+          ),
         ),
       ),
     );
@@ -118,32 +203,36 @@ class HomeComponent extends StatelessWidget {
     Color? color,
     Icon? icon,
     String? text,
+    Function()? onTap,
   }) {
     final circleStyle = text == null;
     final hasBorder = color == null;
 
-    return Container(
-      width: circleStyle ? size : null,
-      height: size,
-      padding: circleStyle ? null : EdgeInsets.only(left: 4, right: 8),
-      decoration: BoxDecoration(
-        color: color,
-        shape: circleStyle ? BoxShape.circle : BoxShape.rectangle,
-        border: hasBorder
-            ? BoxBorder.all(color: GlobalStore.themeExt.border!)
-            : null,
-        borderRadius: circleStyle ? null : BorderRadius.circular(100),
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: circleStyle ? size : null,
+        height: size,
+        padding: circleStyle ? null : EdgeInsets.only(left: 4, right: 8),
+        decoration: BoxDecoration(
+          color: color,
+          shape: circleStyle ? BoxShape.circle : BoxShape.rectangle,
+          border: hasBorder
+              ? BoxBorder.all(color: GlobalStore.themeExt.border!)
+              : null,
+          borderRadius: circleStyle ? null : BorderRadius.circular(100),
+        ),
+        child: circleStyle
+            ? icon // FittedBox(child: icon)
+            : Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  icon ?? Container(),
+                  // SizedBox(width: icon == null ? 0 : 2),
+                  Text(text, style: TextStyle(fontSize: 12)),
+                ],
+              ),
       ),
-      child: circleStyle
-          ? icon // FittedBox(child: icon)
-          : Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                icon ?? Container(),
-                // SizedBox(width: icon == null ? 0 : 2),
-                Text(text, style: TextStyle(fontSize: 12)),
-              ],
-            ),
     );
   }
 
@@ -162,9 +251,11 @@ class HomeComponent extends StatelessWidget {
             decoration: InputDecoration(
               border: InputBorder.none,
               hintText: 'askSomething'.tr,
+              // isDense: true,
             ),
             minLines: 1,
             maxLines: 8,
+            controller: logic.tePromptController,
           ),
           SizedBox(height: 10),
           Row(
@@ -181,11 +272,12 @@ class HomeComponent extends StatelessWidget {
               Spacer(),
               _roundButton(
                 icon: Icon(
-                  AppIcon.arrowUp,
+                  state.isResponding.value ? AppIcon.stop : AppIcon.arrowUp,
                   color: GlobalStore.themeExt.container,
                   size: 18,
                 ),
-                color: GlobalStore.theme.primaryColor,
+                color: GlobalStore.theme.colorScheme.primary,
+                onTap: () => logic.chat(),
               ),
             ],
           ),
@@ -199,14 +291,18 @@ class HomeComponent extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppColor.transparent,
       appBar: _appBar(),
-      body: _body(),
+      body: GestureDetector(
+        behavior: HitTestBehavior.translucent,
+        onTap: () => AppUtil.hideKeyboard(),
+        child: _body(),
+      ),
       bottomNavigationBar: Container(
         margin: EdgeInsets.fromLTRB(16, 0, 16, Get.mediaQuery.padding.bottom),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(20),
           child: BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
-            child: _bottomBar(),
+            child: Obx(() => _bottomBar()),
           ),
         ),
       ),

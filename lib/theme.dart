@@ -13,8 +13,11 @@ class ThemeStyle {
   static defaultThemeLight() {
     final light = ThemeData.light();
     return light.copyWith(
-      primaryColor: AppColor.primary,
-      primaryColorDark: AppColor.primary,
+      colorScheme: light.colorScheme.copyWith(
+        primary: AppColor.primary,
+        secondary: AppColor.primary,
+      ),
+      // primaryColor: AppColor.primary,
       scaffoldBackgroundColor: AppColor.scaffold,
       appBarTheme: light.appBarTheme.copyWith(
         backgroundColor: AppColor.transparent,
@@ -29,21 +32,29 @@ class ThemeStyle {
         centerTitle: true,
         scrolledUnderElevation: 0,
       ),
-      filledButtonTheme: FilledButtonThemeData(
-        style: FilledButton.styleFrom(
-          backgroundColor: AppColor.primary,
-          elevation: 0,
-        ),
+      // filledButtonTheme: FilledButtonThemeData(
+      //   style: FilledButton.styleFrom(
+      //     backgroundColor: AppColor.primary,
+      //     elevation: 0,
+      //   ),
+      // ),
+      // switchTheme: light.switchTheme.copyWith(
+      //   trackColor: WidgetStateProperty.resolveWith<Color?>((states) {
+      //     if (states.contains(WidgetState.selected)) {
+      //       return AppColor.primary; // 打开时轨道颜色
+      //     }
+      //
+      //     // 关闭时回退到原始主题的轨道颜色
+      //     return light.switchTheme.trackColor?.resolve(states);
+      //   }),
+      // ),
+      iconTheme: light.iconTheme.copyWith(color: AppColor.primary),
+      iconButtonTheme: IconButtonThemeData(
+        style: IconButton.styleFrom(foregroundColor: AppColor.primary),
       ),
-      switchTheme: light.switchTheme.copyWith(
-        trackColor: WidgetStateProperty.resolveWith<Color?>((states) {
-          if (states.contains(WidgetState.selected)) {
-            return AppColor.primary; // 打开时轨道颜色
-          }
-
-          // 关闭时回退到原始主题的轨道颜色
-          return light.switchTheme.trackColor?.resolve(states);
-        }),
+      listTileTheme: light.listTileTheme.copyWith(iconColor: AppColor.primary),
+      checkboxTheme: light.checkboxTheme.copyWith(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
       ),
       extensions: [
         const AppThemeExtension(

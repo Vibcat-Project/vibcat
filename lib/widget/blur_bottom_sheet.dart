@@ -4,6 +4,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:vibcat/global/color.dart';
+import 'package:vibcat/util/app.dart';
 
 import '../global/icons.dart';
 import '../global/store.dart';
@@ -14,6 +15,7 @@ class BlurBottomSheet extends StatefulWidget {
   final Widget child;
   final double? maxHeight;
   final bool? ignoreMaxHeight;
+  final bool? ignorePadding;
 
   const BlurBottomSheet({
     super.key,
@@ -21,6 +23,7 @@ class BlurBottomSheet extends StatefulWidget {
     required this.child,
     this.maxHeight,
     this.ignoreMaxHeight,
+    this.ignorePadding,
   });
 
   @override
@@ -31,6 +34,7 @@ class BlurBottomSheet extends StatefulWidget {
     Widget child, {
     double? maxHeight,
     bool? ignoreMaxHeight,
+    bool? ignorePadding,
   }) {
     final future = showModalBottomSheet(
       context: Get.context!,
@@ -45,13 +49,18 @@ class BlurBottomSheet extends StatefulWidget {
         title: title,
         maxHeight: maxHeight,
         ignoreMaxHeight: ignoreMaxHeight,
+        ignorePadding: ignorePadding,
         child: child,
       ),
     );
 
     future.whenComplete(() {
       if (S != dynamic && Get.isRegistered<S>()) {
-        Get.delete<S>();
+        AppUtil.hideKeyboard();
+
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          Get.delete<S>();
+        });
       }
     });
 
@@ -73,7 +82,7 @@ class _BlurBottomSheetState extends State<BlurBottomSheet>
     super.initState();
 
     _animationController = AnimationController(
-      duration: Duration(milliseconds: 300),
+      duration: Duration(milliseconds: 200),
       vsync: this,
     );
 
@@ -239,10 +248,12 @@ class _BlurBottomSheetState extends State<BlurBottomSheet>
                         padding: EdgeInsets.only(
                           bottom: MediaQuery.of(context).viewInsets.bottom,
                         ),
-                        child: Padding(
-                          padding: EdgeInsets.symmetric(vertical: 10),
-                          child: widget.child,
-                        ),
+                        child: widget.ignorePadding == true
+                            ? widget.child
+                            : Padding(
+                                padding: EdgeInsets.symmetric(vertical: 10),
+                                child: widget.child,
+                              ),
                       ),
                     ),
                   ],

@@ -77,89 +77,110 @@ class ModelSettingsPage extends StatelessWidget {
               ),
             ],
           ),
-          child: Container(
-            margin: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-            padding: EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: GlobalStore.themeExt.container,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: EdgeInsets.all(4),
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: BoxBorder.all(
-                          color: GlobalStore.themeExt.border!,
+          child: GestureDetector(
+            onTap: () => logic.showModelList(index),
+            child: Container(
+              margin: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              padding: EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: GlobalStore.themeExt.container,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: BoxBorder.all(
+                            color: GlobalStore.themeExt.border!,
+                          ),
+                        ),
+                        child: ImageLoader(name: item.provider.icon, size: 16),
+                      ),
+                      Expanded(
+                        child: Container(
+                          margin: EdgeInsets.symmetric(horizontal: 10),
+                          child: Text(
+                            item.customName,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
                       ),
-                      child: ImageLoader(name: item.provider.icon, size: 16),
-                    ),
-                    Expanded(
-                      child: Container(
-                        margin: EdgeInsets.symmetric(horizontal: 10),
+                      Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(100),
+                          color: GlobalStore.themeExt.divider,
+                        ),
                         child: Text(
-                          item.customName,
-                          overflow: TextOverflow.ellipsis,
+                          item.provider.plainName,
+                          style: TextStyle(fontSize: 12),
                         ),
                       ),
-                    ),
-                    Container(
-                      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(100),
-                        color: GlobalStore.themeExt.divider,
+                    ],
+                  ),
+                  SizedBox(height: 10),
+                  Container(
+                    margin: EdgeInsets.only(left: 34),
+                    child: Text(
+                      '${'apiEndPoint'.tr}: ${item.endPoint}',
+                      style: TextStyle(
+                        color: GlobalStore.theme.hintColor,
+                        fontSize: 12,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      child: Text(
-                        item.provider.plainName,
-                        style: TextStyle(fontSize: 12),
-                      ),
-                    ),
-                  ],
-                ),
-                SizedBox(height: 10),
-                Container(
-                  margin: EdgeInsets.only(left: 34),
-                  child: Text(
-                    '${'apiEndPoint'.tr}: ${item.endPoint}',
-                    style: TextStyle(
-                      color: GlobalStore.theme.hintColor,
-                      fontSize: 12,
-                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                ),
-                SizedBox(height: 10),
-                Row(
-                  children: [
-                    Expanded(
-                      child: Container(
-                        margin: EdgeInsets.only(left: 34),
+                  SizedBox(height: 10),
+                  Container(
+                    margin: EdgeInsets.only(left: 34),
+                    padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(100),
+                      color: item.hasModels
+                          ? GlobalStore.themeExt.divider
+                          : AppColor.orangeAccent,
+                    ),
+                    child: Text(
+                      item.hasModels ? '模型数量：${item.models!.length}' : '未选择模型',
+                      style: TextStyle(fontSize: 12),
+                    ),
+                  ),
+                  SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Container(
+                          margin: EdgeInsets.only(left: 34),
+                          child: Text(
+                            '${'inputToken'.tr}: ${NumberUtil.formatNumber(item.tokenInput)}',
+                            style: TextStyle(
+                              color: GlobalStore.theme.hintColor,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                      ),
+                      Expanded(
                         child: Text(
-                          '${'inputToken'.tr}: ${NumberUtil.formatNumber(item.tokenInput)}',
+                          '${'outputToken'.tr}: ${NumberUtil.formatNumber(item.tokenOutput)}',
                           style: TextStyle(
                             color: GlobalStore.theme.hintColor,
                             fontSize: 12,
                           ),
                         ),
                       ),
-                    ),
-                    Expanded(
-                      child: Text(
-                        '${'outputToken'.tr}: ${NumberUtil.formatNumber(item.tokenOutput)}',
-                        style: TextStyle(
-                          color: GlobalStore.theme.hintColor,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
         );
