@@ -76,7 +76,21 @@ const ChatMessageSchema = CollectionSchema(
   deserialize: _chatMessageDeserialize,
   deserializeProp: _chatMessageDeserializeProp,
   idName: r'id',
-  indexes: {},
+  indexes: {
+    r'conversationId': IndexSchema(
+      id: 2945908346256754300,
+      name: r'conversationId',
+      unique: false,
+      replace: false,
+      properties: [
+        IndexPropertySchema(
+          name: r'conversationId',
+          type: IndexType.value,
+          caseSensitive: false,
+        )
+      ],
+    )
+  },
   links: {},
   embeddedSchemas: {},
   getId: _chatMessageGetId,
@@ -116,7 +130,12 @@ int _chatMessageEstimateSize(
     }
   }
   bytesCount += 3 + object.role.name.length * 3;
-  bytesCount += 3 + object.status.name.length * 3;
+  {
+    final value = object.status;
+    if (value != null) {
+      bytesCount += 3 + value.name.length * 3;
+    }
+  }
   bytesCount += 3 + object.type.name.length * 3;
   return bytesCount;
 }
@@ -134,7 +153,7 @@ void _chatMessageSerialize(
   writer.writeString(offsets[4], object.metadataJson);
   writer.writeString(offsets[5], object.reasoning);
   writer.writeString(offsets[6], object.role.name);
-  writer.writeString(offsets[7], object.status.name);
+  writer.writeString(offsets[7], object.status?.name);
   writer.writeString(offsets[8], object.type.name);
   writer.writeDateTime(offsets[9], object.updatedAt);
 }
@@ -157,8 +176,7 @@ ChatMessage _chatMessageDeserialize(
       _ChatMessageroleValueEnumMap[reader.readStringOrNull(offsets[6])] ??
           ChatRole.system;
   object.status =
-      _ChatMessagestatusValueEnumMap[reader.readStringOrNull(offsets[7])] ??
-          ChatMessageStatus.sending;
+      _ChatMessagestatusValueEnumMap[reader.readStringOrNull(offsets[7])];
   object.type =
       _ChatMessagetypeValueEnumMap[reader.readStringOrNull(offsets[8])] ??
           ChatMessageType.text;
@@ -189,8 +207,8 @@ P _chatMessageDeserializeProp<P>(
       return (_ChatMessageroleValueEnumMap[reader.readStringOrNull(offset)] ??
           ChatRole.system) as P;
     case 7:
-      return (_ChatMessagestatusValueEnumMap[reader.readStringOrNull(offset)] ??
-          ChatMessageStatus.sending) as P;
+      return (_ChatMessagestatusValueEnumMap[reader.readStringOrNull(offset)])
+          as P;
     case 8:
       return (_ChatMessagetypeValueEnumMap[reader.readStringOrNull(offset)] ??
           ChatMessageType.text) as P;
@@ -258,6 +276,14 @@ extension ChatMessageQueryWhereSort
       return query.addWhereClause(const IdWhereClause.any());
     });
   }
+
+  QueryBuilder<ChatMessage, ChatMessage, QAfterWhere> anyConversationId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(
+        const IndexWhereClause.any(indexName: r'conversationId'),
+      );
+    });
+  }
 }
 
 extension ChatMessageQueryWhere
@@ -323,6 +349,99 @@ extension ChatMessageQueryWhere
         lower: lowerId,
         includeLower: includeLower,
         upper: upperId,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<ChatMessage, ChatMessage, QAfterWhereClause>
+      conversationIdEqualTo(int conversationId) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.equalTo(
+        indexName: r'conversationId',
+        value: [conversationId],
+      ));
+    });
+  }
+
+  QueryBuilder<ChatMessage, ChatMessage, QAfterWhereClause>
+      conversationIdNotEqualTo(int conversationId) {
+    return QueryBuilder.apply(this, (query) {
+      if (query.whereSort == Sort.asc) {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'conversationId',
+              lower: [],
+              upper: [conversationId],
+              includeUpper: false,
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'conversationId',
+              lower: [conversationId],
+              includeLower: false,
+              upper: [],
+            ));
+      } else {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'conversationId',
+              lower: [conversationId],
+              includeLower: false,
+              upper: [],
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'conversationId',
+              lower: [],
+              upper: [conversationId],
+              includeUpper: false,
+            ));
+      }
+    });
+  }
+
+  QueryBuilder<ChatMessage, ChatMessage, QAfterWhereClause>
+      conversationIdGreaterThan(
+    int conversationId, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'conversationId',
+        lower: [conversationId],
+        includeLower: include,
+        upper: [],
+      ));
+    });
+  }
+
+  QueryBuilder<ChatMessage, ChatMessage, QAfterWhereClause>
+      conversationIdLessThan(
+    int conversationId, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'conversationId',
+        lower: [],
+        upper: [conversationId],
+        includeUpper: include,
+      ));
+    });
+  }
+
+  QueryBuilder<ChatMessage, ChatMessage, QAfterWhereClause>
+      conversationIdBetween(
+    int lowerConversationId,
+    int upperConversationId, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'conversationId',
+        lower: [lowerConversationId],
+        includeLower: includeLower,
+        upper: [upperConversationId],
         includeUpper: includeUpper,
       ));
     });
@@ -1240,8 +1359,25 @@ extension ChatMessageQueryFilter
     });
   }
 
+  QueryBuilder<ChatMessage, ChatMessage, QAfterFilterCondition> statusIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'status',
+      ));
+    });
+  }
+
+  QueryBuilder<ChatMessage, ChatMessage, QAfterFilterCondition>
+      statusIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'status',
+      ));
+    });
+  }
+
   QueryBuilder<ChatMessage, ChatMessage, QAfterFilterCondition> statusEqualTo(
-    ChatMessageStatus value, {
+    ChatMessageStatus? value, {
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
@@ -1255,7 +1391,7 @@ extension ChatMessageQueryFilter
 
   QueryBuilder<ChatMessage, ChatMessage, QAfterFilterCondition>
       statusGreaterThan(
-    ChatMessageStatus value, {
+    ChatMessageStatus? value, {
     bool include = false,
     bool caseSensitive = true,
   }) {
@@ -1270,7 +1406,7 @@ extension ChatMessageQueryFilter
   }
 
   QueryBuilder<ChatMessage, ChatMessage, QAfterFilterCondition> statusLessThan(
-    ChatMessageStatus value, {
+    ChatMessageStatus? value, {
     bool include = false,
     bool caseSensitive = true,
   }) {
@@ -1285,8 +1421,8 @@ extension ChatMessageQueryFilter
   }
 
   QueryBuilder<ChatMessage, ChatMessage, QAfterFilterCondition> statusBetween(
-    ChatMessageStatus lower,
-    ChatMessageStatus upper, {
+    ChatMessageStatus? lower,
+    ChatMessageStatus? upper, {
     bool includeLower = true,
     bool includeUpper = true,
     bool caseSensitive = true,
@@ -1950,7 +2086,7 @@ extension ChatMessageQueryProperty
     });
   }
 
-  QueryBuilder<ChatMessage, ChatMessageStatus, QQueryOperations>
+  QueryBuilder<ChatMessage, ChatMessageStatus?, QQueryOperations>
       statusProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'status');

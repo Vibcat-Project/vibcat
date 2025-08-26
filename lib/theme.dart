@@ -55,6 +55,7 @@ class ThemeStyle {
       listTileTheme: light.listTileTheme.copyWith(iconColor: AppColor.primary),
       checkboxTheme: light.checkboxTheme.copyWith(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
+        visualDensity: VisualDensity.compact,
       ),
       extensions: [
         const AppThemeExtension(

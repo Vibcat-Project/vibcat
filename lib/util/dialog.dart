@@ -24,9 +24,10 @@ class DialogUtil {
     );
   }
 
-  static Future<int?> showOptionBottomSheet(
-    List<OptionBottomSheetItem> options, {
+  static Future<T?> showOptionBottomSheet<T>(
+    List<OptionBottomSheetItem<T>> options, {
     String? title,
+    T? current,
   }) async {
     return await BlurBottomSheet.show(
       title ?? 'option'.tr,
@@ -38,6 +39,9 @@ class DialogUtil {
                 color: AppColor.transparent,
                 child: ListTile(
                   title: Text(item.text),
+                  trailing: current == null || current != item.value
+                      ? null
+                      : Checkbox(value: true, onChanged: (_) {}),
                   onTap: () => AppRoute.back(result: item.value),
                 ),
               ),

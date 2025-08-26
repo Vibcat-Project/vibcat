@@ -10,6 +10,7 @@ part 'chat_message.g.dart';
 
 @collection
 class ChatMessage extends BaseSchema {
+  @Index()
   late int conversationId;
 
   @Enumerated(EnumType.name)
@@ -22,7 +23,7 @@ class ChatMessage extends BaseSchema {
   String? mediaUrl;
 
   @Enumerated(EnumType.name)
-  late ChatMessageStatus status;
+  ChatMessageStatus? status;
 
   // 存储 metadata 的 JSON 字符串
   @protected

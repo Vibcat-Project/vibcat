@@ -15,41 +15,44 @@ class SelectModelComponent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListView.builder(
-      shrinkWrap: true,
-      physics: NeverScrollableScrollPhysics(),
-      itemCount: state.aiModelConfigList.length,
-      itemBuilder: (_, index) {
-        final item = state.aiModelConfigList[index];
+    return Obx(
+      () => ListView.builder(
+        shrinkWrap: true,
+        physics: NeverScrollableScrollPhysics(),
+        itemCount: state.aiModelConfigList.length,
+        itemBuilder: (_, index) {
+          final item = state.aiModelConfigList[index];
 
-        return Column(
-          children: [
-            // 一级标题
-            ListTile(
-              leading: Container(
-                padding: EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(color: GlobalStore.themeExt.border!),
+          return Column(
+            children: [
+              // 一级标题
+              ListTile(
+                leading: Container(
+                  padding: EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: GlobalStore.themeExt.border!),
+                  ),
+                  child: ImageLoader(name: item.provider.icon, size: 20),
                 ),
-                child: ImageLoader(name: item.provider.icon, size: 20),
+                title: Text(item.customName),
               ),
-              title: Text(item.customName),
-            ),
-            // 二级子项 - 可单选点击
-            ...item.models!.map(
-              (model) => Material(
-                color: AppColor.transparent,
-                child: ListTile(
-                  leading: SizedBox(width: 38),
-                  title: Text(model.id),
-                  onTap: () => logic.selectModel(item, model),
+              // 二级子项 - 可单选点击
+              ...item.models!.map(
+                (model) => Material(
+                  color: AppColor.transparent,
+                  child: ListTile(
+                    visualDensity: VisualDensity.comfortable,
+                    leading: SizedBox(width: 36),
+                    title: Text(model.id),
+                    onTap: () => logic.selectModel(item, model),
+                  ),
                 ),
               ),
-            ),
-          ],
-        );
-      },
+            ],
+          );
+        },
+      ),
     );
   }
 }

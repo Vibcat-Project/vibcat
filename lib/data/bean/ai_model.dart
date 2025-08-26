@@ -5,18 +5,13 @@ part 'ai_model.g.dart';
 @JsonSerializable()
 class AIModel {
   final String id;
-  final String object;
+  final String? object;
   final int? created;
 
   @JsonKey(name: 'owned_by')
-  final String ownedBy;
+  final String? ownedBy;
 
-  AIModel({
-    required this.id,
-    required this.object,
-    this.created,
-    required this.ownedBy,
-  });
+  AIModel({required this.id, this.object, this.created, this.ownedBy});
 
   factory AIModel.fromJson(Map<String, dynamic> json) =>
       _$AIModelFromJson(json);

@@ -39,9 +39,34 @@ dependencies:
   cupertino_icons: ^1.0.8
 
   get: ^4.7.2
+  markdown: ^7.3.0
+  flutter_markdown: ^0.7.7+1
+
+  ############
+  google_fonts: ^6.2.1 # 提供更美观的编程字体，如 Fira Code
+  # 数学公式支持
+  flutter_math_fork: ^0.7.2
+
+  # 代码高亮
+  flutter_highlight: ^0.7.0
+  highlight: ^0.7.0
+
+  # URL 启动器
+  url_launcher: ^6.2.1
+  ############
+
+#  flutter_highlight: ^0.7.0
+#  highlight: ^0.7.0
+#  flutter_math_fork: ^0.7.2
+  flutter_markdown_latex: ^0.3.4
+
+  gpt_markdown: ^1.1.2
   markdown_widget:
-    git:
-      url: https://github.com/Vibcat-Project/markdown_widget.git
+    path: ../markdown_widget
+#  markdown_widget:
+#    git:
+#      url: https://github.com/Vibcat-Project/markdown_widget.git
+
   flutter_svg: ^2.2.0
   path_provider: ^2.1.5
   isar: *isar_version
@@ -50,6 +75,8 @@ dependencies:
   dio: ^5.9.0
   json_annotation: ^4.9.0
   lottie: ^3.3.1
+  gaimon: ^1.4.1
+  intl: ^0.20.2
 
 dev_dependencies:
   flutter_test:

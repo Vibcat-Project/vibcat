@@ -1,4 +1,5 @@
 import 'package:get/get.dart';
+import 'package:vibcat/page/main/home/logic.dart';
 
 import '../../widget/slide_drawer.dart';
 import 'state.dart';
@@ -14,6 +15,10 @@ class MainLogic extends GetxController {
     } else {
       slideDrawerController.closeDrawer();
     }
+  }
+
+  void onLeftSwipeThresholdApply() {
+    Get.find<HomeLogic>().newConversation();
   }
 
   @override

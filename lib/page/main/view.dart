@@ -4,6 +4,7 @@ import 'package:vibcat/page/main/drawer/view.dart';
 import 'package:vibcat/page/main/home/view.dart';
 import 'package:vibcat/widget/slide_drawer.dart';
 
+import '../../util/haptic.dart';
 import 'logic.dart';
 import 'state.dart';
 
@@ -18,6 +19,9 @@ class MainPage extends StatelessWidget {
     return Scaffold(
       body: SlideDrawer(
         controller: logic.slideDrawerController,
+        onLeftSwipeThresholdTrig: () => HapticUtil.normal(),
+        onLeftSwipeThresholdApply: () => logic.onLeftSwipeThresholdApply(),
+        onSlideDrawerStateChanged: (_) => HapticUtil.soft(),
         drawer: DrawerComponent(),
         child: HomeComponent(),
       ),

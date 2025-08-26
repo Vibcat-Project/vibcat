@@ -1,6 +1,6 @@
-class OptionBottomSheetItem {
+class OptionBottomSheetItem<T> {
   final String text;
-  final int value;
+  final T value;
 
   OptionBottomSheetItem(this.text, this.value);
 }

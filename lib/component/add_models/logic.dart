@@ -27,9 +27,8 @@ class AddModelsLogic extends GetxController with StateMixin<void> {
     super.onInit();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final box = loadingKey.currentContext!.findRenderObject() as RenderBox;
-      state.loadingHeight.value = box.size.height;
-      state.height.value = box.size.height;
+      final box = loadingKey.currentContext?.findRenderObject() as RenderBox?;
+      state.height.value = box?.size.height ?? 0;
     });
 
     state.selectedModelList.value = aiModelConfig.models ?? [];

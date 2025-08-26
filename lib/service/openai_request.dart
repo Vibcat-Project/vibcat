@@ -6,6 +6,8 @@ import 'package:vibcat/data/schema/chat_message.dart';
 import 'package:vibcat/data/schema/ai_model_config.dart';
 import 'package:vibcat/service/ai_request.dart';
 
+import '../data/schema/conversation.dart';
+
 class OpenAIRequestService extends AIRequestService {
   @override
   Future<List<AIModel>> getModelList({required AIModelConfig config}) async {
@@ -34,6 +36,7 @@ class OpenAIRequestService extends AIRequestService {
   Stream<ChatMessage?> completions({
     required AIModelConfig config,
     required AIModel model,
+    required Conversation conversation,
     required List<ChatMessage> history,
   }) async* {
     try {
@@ -43,19 +46,20 @@ class OpenAIRequestService extends AIRequestService {
 
       final res = await dio.post(
         '${config.endPoint}/chat/completions',
-        data: {'model': model.id, 'stream': true, 'messages': messages},
+        data: {
+          'model': model.id,
+          'messages': messages,
+          'stream': true,
+          'stream_options': {'include_usage': true},
+          // 'reasoning_effort': conversation.thinkType.name,
+        },
         options: Options(
           headers: {'Authorization': 'Bearer ${config.apiKey}'},
           responseType: ResponseType.stream,
         ),
       );
 
-      final stream = res.data.stream
-          // type 'Utf8Decoder' is not a subtype of type 'StreamTransformer<Uint8List, dynamic>' of 'streamTransformer'
-          // or .map((chunk) => chunk.toList()) // Uint8List -> List<int>
-          .cast<List<int>>()
-          .transform(utf8.decoder)
-          .transform(const LineSplitter());
+      final stream = transformStream(res);
 
       var thinkFinished = true;
 
@@ -67,9 +71,14 @@ class OpenAIRequestService extends AIRequestService {
           if (jsonStr == '[DONE]') break;
 
           final Map<String, dynamic> data = jsonDecode(jsonStr);
+          if (data['choices'].isEmpty) {
+            continue;
+          }
+
           final content = data['choices'][0]['delta']['content'];
           final reasoning = data['choices'][0]['delta']['reasoning_content'];
 
+          // 针对 SiliconFlow
           if (reasoning != null) {
             yield ChatMessage()..reasoning = reasoning;
             continue;
@@ -93,6 +102,8 @@ class OpenAIRequestService extends AIRequestService {
           }
         }
       }
+    } on DioException catch (e)  {
+      yield null;
     } catch (e) {
       yield null;
     }
@@ -102,6 +113,7 @@ class OpenAIRequestService extends AIRequestService {
   Future<ChatMessage> completionsOnce({
     required AIModelConfig config,
     required AIModel model,
+    required Conversation conversation,
     required List<ChatMessage> history,
   }) {
     // TODO: implement completionsOnce

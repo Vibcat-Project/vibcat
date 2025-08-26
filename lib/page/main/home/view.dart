@@ -1,11 +1,15 @@
 import 'dart:ui';
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:markdown_widget/markdown_widget.dart';
+import 'package:vibcat/enum/ai_think_type.dart';
+import 'package:vibcat/enum/chat_message_status.dart';
 import 'package:vibcat/enum/chat_role.dart';
 import 'package:vibcat/global/color.dart';
 import 'package:vibcat/global/icons.dart';
+import 'package:vibcat/global/lottie.dart';
 import 'package:vibcat/global/markdown_config.dart';
 import 'package:vibcat/global/store.dart';
 import 'package:vibcat/widget/image_loader.dart';
@@ -25,29 +29,50 @@ class HomeComponent extends StatelessWidget {
   AppBar _appBar() {
     return AppBar(
       title: GestureDetector(
-        child: Obx(
-          () => Container(
-            padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            decoration: BoxDecoration(
-              color: GlobalStore.themeExt.container,
-              borderRadius: BorderRadius.circular(100),
-              border: BoxBorder.all(color: GlobalStore.themeExt.border!),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (state.currentAIModel.value != null) ...[
-                  ImageLoader(
-                    name: state.currentAIModelConfig.value?.provider.icon ?? '',
-                    size: 14,
+        child: AnimatedBuilder(
+          animation: Listenable.merge([logic.pulseController]),
+          builder: (_, _) => Obx(
+            () => Container(
+              padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: GlobalStore.themeExt.container,
+                borderRadius: BorderRadius.circular(100),
+                border: BoxBorder.all(color: GlobalStore.themeExt.border!),
+                boxShadow: state.currentAIModel.value == null
+                    ? [
+                        BoxShadow(
+                          color: AppColor.red.withOpacity(
+                            0.3 * logic.pulseController.value,
+                          ),
+                          blurRadius: 10,
+                          spreadRadius: 2,
+                        ),
+                      ]
+                    : null,
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (state.currentAIModel.value != null) ...[
+                    ImageLoader(
+                      name:
+                          state.currentAIModelConfig.value?.provider.icon ?? '',
+                      size: 14,
+                    ),
+                    SizedBox(width: 10),
+                  ],
+                  Flexible(
+                    child: Text(
+                      state.currentAIModel.value?.id.split('/').last ??
+                          'Vibcat',
+                      style: TextStyle(
+                        fontSize: 14,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
                   ),
-                  SizedBox(width: 10),
                 ],
-                Text(
-                  state.currentAIModel.value?.id ?? 'Vibcat',
-                  style: TextStyle(fontSize: 14),
-                ),
-              ],
+              ),
             ),
           ),
         ),
@@ -61,7 +86,7 @@ class HomeComponent extends StatelessWidget {
         Container(
           margin: EdgeInsets.only(right: 4),
           child: IconButton(
-            onPressed: () {},
+            onPressed: () => logic.newConversation(true),
             icon: Icon(AppIcon.anonymous, fontWeight: FontWeight.bold),
           ),
         ),
@@ -118,6 +143,20 @@ class HomeComponent extends StatelessWidget {
                 );
               }
 
+              if (item.status == ChatMessageStatus.sending) {
+                return Row(
+                  children: [
+                    Container(
+                      margin: EdgeInsets.symmetric(vertical: 6),
+                      padding: EdgeInsets.symmetric(vertical: 8),
+                      child: AppLottie.loadingRainbowCatWidget(),
+                    ),
+                  ],
+                );
+              } else if (item.status == ChatMessageStatus.failed) {
+                return Text('dataLoadFail'.tr);
+              }
+
               return Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -131,51 +170,38 @@ class HomeComponent extends StatelessWidget {
                         color: GlobalStore.themeExt.border,
                         borderRadius: BorderRadius.circular(15),
                       ),
-                      child: LayoutBuilder(
-                        builder: (context, constraints) {
-                          const double fontSize = 14;
-                          const double lineHeight = 1.4;
-                          const int maxLines = 4; // 最大显示行数
-                          final double maxHeight =
-                              fontSize * lineHeight * maxLines;
-
-                          return ShaderMask(
-                            shaderCallback: (Rect bounds) {
-                              return LinearGradient(
-                                begin: Alignment.topCenter,
-                                end: Alignment.bottomCenter,
-                                colors: [
-                                  Colors.transparent, // 顶部透明（渐变开始）
-                                  Colors.black, // 中间完全可见
-                                  Colors.black, // 中间完全可见
-                                  Colors.transparent, // 底部透明（渐变结束）
-                                ],
-                                stops: [0.0, 0.4, 0.6, 1.0], // 控制渐变区间
-                              ).createShader(bounds);
-                            },
-                            blendMode: BlendMode.dstIn,
-                            child: Container(
-                              constraints: BoxConstraints(maxHeight: maxHeight),
-                              child: SingleChildScrollView(
-                                controller: logic.getReasoningScrollController(
-                                  index,
-                                ),
-                                physics: NeverScrollableScrollPhysics(),
-                                reverse: true, // 从下往上滚动
-                                child: SizedBox(
-                                  width: double.infinity,
-                                  child: Text(
-                                    item.reasoning!.trim(),
-                                    style: TextStyle(
-                                      fontSize: fontSize,
-                                      height: lineHeight,
-                                    ),
-                                  ),
-                                ),
+                      child: ShaderMask(
+                        shaderCallback: (Rect bounds) {
+                          return LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              Colors.transparent, // 顶部透明（渐变开始）
+                              Colors.black, // 中间完全可见
+                              Colors.black, // 中间完全可见
+                              Colors.transparent, // 底部透明（渐变结束）
+                            ],
+                            stops: [0.0, 0.4, 0.6, 1.0], // 控制渐变区间
+                          ).createShader(bounds);
+                        },
+                        blendMode: BlendMode.dstIn,
+                        child: ConstrainedBox(
+                          // 最大显示行数
+                          // maxHeight = fontSize * lineHeight * maxLines
+                          constraints: BoxConstraints(maxHeight: 14 * 1.4 * 4),
+                          child: SingleChildScrollView(
+                            controller: logic.reasoningController,
+                            physics: NeverScrollableScrollPhysics(),
+                            reverse: true, // 从下往上滚动
+                            child: SizedBox(
+                              width: double.infinity,
+                              child: Text(
+                                item.reasoning!.trim(),
+                                style: TextStyle(fontSize: 14, height: 1.4),
                               ),
                             ),
-                          );
-                        },
+                          ),
+                        ),
                       ),
                     ),
                   Container(
@@ -186,7 +212,6 @@ class HomeComponent extends StatelessWidget {
                       data: item.content ?? '',
                       generator: MarkdownConfigs.generator,
                       config: MarkdownConfigs.config,
-                      // style: TextStyle(fontSize: 16),
                     ),
                   ),
                 ],
@@ -262,10 +287,41 @@ class HomeComponent extends StatelessWidget {
             children: [
               _roundButton(icon: Icon(AppIcon.add)),
               SizedBox(width: 10),
-              _roundButton(
-                icon: Icon(AppIcon.light),
-                text: '深度思考',
-                color: GlobalStore.themeExt.border,
+              PopupMenuButton(
+                color: GlobalStore.themeExt.container,
+                elevation: 10,
+                shadowColor: AppColor.black.withOpacity(0.5),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: _roundButton(
+                  icon: Icon(AppIcon.light),
+                  text: state.thinkType.value == AIThinkType.none
+                      ? 'think'.tr
+                      : state.thinkType.value.plainName.tr,
+                  color: state.thinkType.value == AIThinkType.none
+                      ? null
+                      : GlobalStore.themeExt.border,
+                  // onTap: () => logic.changeThinkType(),
+                ),
+                itemBuilder: (_) => AIThinkType.values
+                    .map(
+                      (e) => PopupMenuItem(
+                        value: e,
+                        child: Row(
+                          children: [
+                            Expanded(child: Text(e.plainName.tr)),
+                            if (e == state.thinkType.value)
+                              Icon(
+                                CupertinoIcons.checkmark_alt_circle_fill,
+                                size: 18,
+                              ),
+                          ],
+                        ),
+                      ),
+                    )
+                    .toList(),
+                onSelected: (v) => logic.changeThinkType(v),
               ),
               SizedBox(width: 10),
               _roundButton(icon: Icon(AppIcon.network), text: '联网'),
