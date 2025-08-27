@@ -2,8 +2,6 @@ class AppImage {
   static const path = 'assets/images';
   static const providerPath = '$path/provider';
 
-  static const character = '$path/img_character.png';
-
   static const providerOpenAI = '$providerPath/openai.svg';
   static const providerVolcanoEngine = '$providerPath/volcanoEngine.png';
   static const providerGemini = '$providerPath/gemini.png';
@@ -14,4 +12,6 @@ class AppImage {
   static const providerGroq = '$providerPath/groq.svg';
   static const providerOpenRouter = '$providerPath/openRouter.png';
   static const providerOllama = '$providerPath/ollama.png';
+
+  static const emojiPeekingEyes = '$path/emoji_peeking_eyes.svg';
 }

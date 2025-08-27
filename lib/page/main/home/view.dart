@@ -9,6 +9,7 @@ import 'package:vibcat/enum/chat_message_status.dart';
 import 'package:vibcat/enum/chat_role.dart';
 import 'package:vibcat/global/color.dart';
 import 'package:vibcat/global/icons.dart';
+import 'package:vibcat/global/images.dart';
 import 'package:vibcat/global/lottie.dart';
 import 'package:vibcat/global/markdown_config.dart';
 import 'package:vibcat/global/store.dart';
@@ -102,136 +103,222 @@ class HomeComponent extends StatelessWidget {
     );
   }
 
-  Widget _body() {
-    return Container(
-      padding: EdgeInsets.fromLTRB(16, 0, 16, Get.mediaQuery.padding.bottom),
-      child: ClipRRect(
-        borderRadius: BorderRadius.vertical(bottom: Radius.circular(20)),
-        child: Obx(
-          () => ListView.builder(
-            controller: logic.listViewController,
-            itemCount: state.chatMessage.length,
-            itemBuilder: (context, index) {
-              final item = state.chatMessage[index];
+  Widget _chatBody() => Container(
+    padding: EdgeInsets.fromLTRB(16, 0, 16, Get.mediaQuery.padding.bottom),
+    child: ClipRRect(
+      borderRadius: BorderRadius.vertical(bottom: Radius.circular(20)),
+      child: ListView.builder(
+        controller: logic.listViewController,
+        itemCount: state.chatMessage.length,
+        itemBuilder: (context, index) {
+          final item = state.chatMessage[index];
+          final isLastItem = index == state.chatMessage.length - 1;
 
-              if (item.role == ChatRole.user) {
-                return Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    ConstrainedBox(
-                      constraints: BoxConstraints(maxWidth: Get.width * 0.8),
-                      child: Container(
-                        margin: EdgeInsets.symmetric(vertical: 6),
-                        padding: EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 8,
-                        ),
-                        decoration: BoxDecoration(
-                          color: GlobalStore.themeExt.container,
-                          borderRadius: BorderRadius.circular(20),
-                          border: BoxBorder.all(
-                            color: GlobalStore.themeExt.border!,
-                          ),
-                        ),
-                        child: SelectableText(
-                          item.content ?? '',
-                          style: TextStyle(fontSize: 16),
-                        ),
-                      ),
-                    ),
-                  ],
-                );
-              }
-
-              if (item.status == ChatMessageStatus.sending) {
-                return Row(
-                  children: [
-                    Container(
-                      margin: EdgeInsets.symmetric(vertical: 6),
-                      padding: EdgeInsets.symmetric(vertical: 8),
-                      child: AppLottie.loadingRainbowCatWidget(),
-                    ),
-                  ],
-                );
-              } else if (item.status == ChatMessageStatus.failed) {
-                return Text('dataLoadFail'.tr);
-              }
-
-              return Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // 思考内容
-                  if (item.reasoning != null && item.reasoning!.isNotEmpty)
-                    Container(
-                      margin: EdgeInsets.only(top: 20),
-                      decoration: BoxDecoration(
-                        color: GlobalStore.themeExt.border,
-                        borderRadius: BorderRadius.circular(15),
-                      ),
-                      child: Stack(
-                        children: [
-                          // 原始内容
-                          Padding(
-                            padding: EdgeInsets.all(10),
-                            child: ConstrainedBox(
-                              constraints: BoxConstraints(
-                                // 最大显示行数
-                                // maxHeight = fontSize * lineHeight * maxLines
-                                maxHeight: 14 * 1.4 * 4,
-                              ),
-                              child: SingleChildScrollView(
-                                controller:
-                                    index == state.chatMessage.length - 1
-                                    ? logic.reasoningController
-                                    : null,
-                                physics: NeverScrollableScrollPhysics(),
-                                // reverse: true,
-                                child: SizedBox(
-                                  width: double.infinity,
-                                  child: Text(
-                                    item.reasoning!.trim(),
-                                    style: TextStyle(fontSize: 14, height: 1.4),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                          // 顶部模糊层
-                          // Positioned.fill(
-                          //   child: ClipRRect(
-                          //     borderRadius: BorderRadius.circular(15),
-                          //     child: BackdropFilter(
-                          //       filter: ImageFilter.blur(sigmaX: 2, sigmaY: 2),
-                          //       child: Container(
-                          //         decoration: BoxDecoration(
-                          //           color: Colors.black.withOpacity(0.01),
-                          //         ),
-                          //       ),
-                          //     ),
-                          //   ),
-                          // ),
-                        ],
-                      ),
-                    ),
-                  Container(
+          if (item.role == ChatRole.user) {
+            return Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                ConstrainedBox(
+                  constraints: BoxConstraints(maxWidth: Get.width * 0.8),
+                  child: Container(
                     margin: EdgeInsets.symmetric(vertical: 6),
-                    padding: EdgeInsets.symmetric(vertical: 8),
-                    width: double.infinity,
-                    child: MarkdownBlock(
-                      data: item.content ?? '',
-                      generator: MarkdownConfigs.generator,
-                      config: MarkdownConfigs.config,
+                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: GlobalStore.themeExt.container,
+                      borderRadius: BorderRadius.circular(20),
+                      border: BoxBorder.all(
+                        color: GlobalStore.themeExt.border!,
+                      ),
+                    ),
+                    child: SelectableText(
+                      item.content ?? '',
+                      style: TextStyle(fontSize: 16),
                     ),
                   ),
-                ],
-              );
-            },
-          ),
-        ),
+                ),
+              ],
+            );
+          }
+
+          if (item.status == ChatMessageStatus.sending) {
+            return Row(
+              children: [
+                Container(
+                  margin: EdgeInsets.symmetric(vertical: 6),
+                  padding: EdgeInsets.symmetric(vertical: 8),
+                  child: AppLottie.loadingRainbowCatWidget(),
+                ),
+              ],
+            );
+          } else if (item.status == ChatMessageStatus.failed) {
+            return Wrap(
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                Container(
+                  margin: EdgeInsets.symmetric(vertical: 20),
+                  padding: EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: GlobalStore.themeExt.border,
+                    borderRadius: BorderRadius.circular(15),
+                  ),
+                  child: Text(
+                    'dataLoadFail'.tr,
+                    style: TextStyle(fontSize: 15),
+                  ),
+                ),
+                if (isLastItem)
+                  IconButton(
+                    onPressed: () => logic.chat(true),
+                    icon: Icon(Icons.refresh),
+                  ),
+              ],
+            );
+          }
+
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // 思考内容
+              if (item.reasoning != null && item.reasoning!.isNotEmpty)
+                Container(
+                  margin: EdgeInsets.only(top: 20),
+                  decoration: BoxDecoration(
+                    color: GlobalStore.themeExt.border,
+                    borderRadius: BorderRadius.circular(15),
+                  ),
+                  child: Stack(
+                    children: [
+                      AnimatedSize(
+                        duration: Duration(milliseconds: 300),
+                        curve: Curves.easeInOut,
+                        child: item.status == ChatMessageStatus.reasoning
+                            ? ShaderMask(
+                                shaderCallback: (Rect bounds) {
+                                  return LinearGradient(
+                                    begin: Alignment.topCenter,
+                                    end: Alignment.bottomCenter,
+                                    colors: [
+                                      Colors.transparent, // 顶部透明（渐变开始）
+                                      Colors.black, // 中间完全可见
+                                      Colors.transparent, // 底部透明（渐变结束）
+                                    ],
+                                    stops: [0.0, 0.5, 1.0], // 控制渐变区间
+                                  ).createShader(bounds);
+                                },
+                                blendMode: BlendMode.dstIn,
+                                child: Padding(
+                                  padding: EdgeInsets.all(10),
+                                  child: ConstrainedBox(
+                                    constraints: BoxConstraints(
+                                      // 最大显示行数
+                                      // maxHeight = fontSize * lineHeight * maxLines
+                                      maxHeight: logic.reasoningTextHeight * 4,
+                                    ),
+                                    child: SingleChildScrollView(
+                                      controller: isLastItem
+                                          ? logic.reasoningController
+                                          : null,
+                                      physics: NeverScrollableScrollPhysics(),
+                                      // reverse: true,
+                                      child: SizedBox(
+                                        width: double.infinity,
+                                        child: Text(
+                                          item.reasoning!.trim(),
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            height: 1.4,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              )
+                            : Padding(
+                                padding: EdgeInsets.all(10),
+                                child: Text(
+                                  'reasoningTimeConsuming'.trParams({
+                                    'time': item.reasoningTimeConsuming ?? '',
+                                  }),
+                                ),
+                              ),
+                      ),
+
+                      // 原始内容
+                      // Padding(
+                      //   padding: EdgeInsets.all(10),
+                      //   child: ConstrainedBox(
+                      //     constraints: BoxConstraints(
+                      //       // 最大显示行数
+                      //       // maxHeight = fontSize * lineHeight * maxLines
+                      //       maxHeight: logic.reasoningTextHeight * 4,
+                      //     ),
+                      //     child: SingleChildScrollView(
+                      //       controller: isLastItem
+                      //           ? logic.reasoningController
+                      //           : null,
+                      //       physics: NeverScrollableScrollPhysics(),
+                      //       // reverse: true,
+                      //       child: SizedBox(
+                      //         width: double.infinity,
+                      //         child: Text(
+                      //           item.reasoning!.trim(),
+                      //           style: TextStyle(fontSize: 14, height: 1.4),
+                      //         ),
+                      //       ),
+                      //     ),
+                      //   ),
+                      // ),
+                      // 顶部模糊层
+                      // Positioned.fill(
+                      //   child: ClipRRect(
+                      //     borderRadius: BorderRadius.circular(15),
+                      //     child: BackdropFilter(
+                      //       filter: ImageFilter.blur(sigmaX: 2, sigmaY: 2),
+                      //       child: Container(
+                      //         decoration: BoxDecoration(
+                      //           color: Colors.black.withOpacity(0.01),
+                      //         ),
+                      //       ),
+                      //     ),
+                      //   ),
+                      // ),
+                    ],
+                  ),
+                ),
+              Container(
+                margin: EdgeInsets.symmetric(vertical: 6),
+                padding: EdgeInsets.symmetric(vertical: 8),
+                width: double.infinity,
+                child: MarkdownBlock(
+                  data: item.content ?? '',
+                  generator: MarkdownConfigs.generator,
+                  config: MarkdownConfigs.config,
+                ),
+              ),
+            ],
+          );
+        },
       ),
-    );
-  }
+    ),
+  );
+
+  Widget _temporaryBody() => Container(
+    alignment: AlignmentGeometry.center,
+    margin: EdgeInsets.only(bottom: Get.mediaQuery.padding.bottom),
+    child: SafeArea(
+      child: ImageLoader(name: AppImage.emojiPeekingEyes, size: 140),
+    ),
+  );
+
+  Widget _body() => Obx(() {
+    if (state.chatMessage.isNotEmpty) {
+      return _chatBody();
+    }
+
+    return state.isTemporaryChat.value ? _temporaryBody() : _chatBody();
+  });
 
   Widget _roundButton({
     double? size = 32,
@@ -334,11 +421,7 @@ class HomeComponent extends StatelessWidget {
                 onSelected: (v) => logic.changeThinkType(v),
               ),
               SizedBox(width: 10),
-              _roundButton(
-                icon: Icon(AppIcon.network),
-                text: '联网',
-                onTap: () => logic.scrollReasoningToBottom(),
-              ),
+              _roundButton(icon: Icon(AppIcon.network), text: '联网'),
               Spacer(),
               _roundButton(
                 icon: Icon(

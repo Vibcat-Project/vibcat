@@ -254,6 +254,9 @@ class DrawerComponent extends StatelessWidget {
           Widget buildTile() => Material(
             color: AppColor.transparent,
             child: ListTile(
+              tileColor: isSelected
+                  ? GlobalStore.themeExt.container?.withAlpha(60)
+                  : null,
               contentPadding: const EdgeInsets.symmetric(horizontal: 8),
               visualDensity: VisualDensity.compact,
               shape: RoundedRectangleBorder(

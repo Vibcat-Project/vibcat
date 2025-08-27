@@ -85,6 +85,16 @@ class AppDBRepository extends BaseDBRepository {
     return list;
   }
 
+  /// 删除指定的 ChatMessage
+  Future<bool> deleteChatMessage(ChatMessage message) async {
+    return await isar.writeTxn(() async {
+      return await isar.chatMessages
+          .where()
+          .idEqualTo(message.id)
+          .deleteFirst();
+    });
+  }
+
   /// 删除指定的历史对话的所有 ChatMessage
   Future<int> deleteChatMessageByConversation(Conversation conversation) async {
     return await isar.writeTxn(() async {
@@ -93,5 +103,19 @@ class AppDBRepository extends BaseDBRepository {
           .conversationIdEqualTo(conversation.id)
           .deleteAll();
     });
+  }
+
+  /// 获取所有 Conversation 以及对应的对话消息
+  Future<Map<Conversation, List<ChatMessage>>>
+  getAllConversationAndChatMassage() async {
+    final convList = await getConversationList();
+    final map = <Conversation, List<ChatMessage>>{};
+
+    for (final conv in convList) {
+      final chatMsg = await getChatMessageList(conv);
+      map[conv] = chatMsg;
+    }
+
+    return map;
   }
 }

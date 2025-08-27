@@ -62,7 +62,7 @@ class VolcanoEngineRequestService extends AIRequestService {
   }
 
   @override
-  Stream<ChatMessage?> completions({
+  Stream<ChatMessage?> chatCompletions({
     required AIModelConfig config,
     required AIModel model,
     required Conversation conversation,
@@ -127,7 +127,7 @@ class VolcanoEngineRequestService extends AIRequestService {
   }
 
   @override
-  Future<ChatMessage?> completionsOnce({
+  Future<ChatMessage?> chatCompletionsOnce({
     required AIModelConfig config,
     required AIModel model,
     required Conversation conversation,

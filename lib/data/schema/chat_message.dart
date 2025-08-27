@@ -25,6 +25,9 @@ class ChatMessage extends BaseSchema {
   @Enumerated(EnumType.name)
   ChatMessageStatus? status;
 
+  // 思考耗时
+  String? reasoningTimeConsuming;
+
   // 存储 metadata 的 JSON 字符串
   @protected
   String? metadataJson;

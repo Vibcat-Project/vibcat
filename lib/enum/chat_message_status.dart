@@ -7,4 +7,6 @@ enum ChatMessageStatus {
   failed,
   // 流式生成中
   streaming,
+  // 思考中
+  reasoning,
 }

@@ -10,13 +10,13 @@ class AINetRepository {
     return AIRequestService.create(config).getModelList(config: config);
   }
 
-  Stream<ChatMessage?> completions({
+  Stream<ChatMessage?> chatCompletions({
     required AIModelConfig config,
     required AIModel model,
     required Conversation conversation,
     required List<ChatMessage> history,
   }) {
-    return AIRequestService.create(config).completions(
+    return AIRequestService.create(config).chatCompletions(
       config: config,
       model: model,
       conversation: conversation,
@@ -30,7 +30,7 @@ class AINetRepository {
     required Conversation conversation,
     required List<ChatMessage> history,
   }) async {
-    final result = await AIRequestService.create(config).completionsOnce(
+    final result = await AIRequestService.create(config).chatCompletionsOnce(
       config: config,
       model: model,
       conversation: conversation,

@@ -15,14 +15,14 @@ abstract class AIRequestService {
   final dio = Dio();
 
   AIRequestService() {
-    dio.interceptors.add(LogInterceptor(responseBody: true));
+    dio.interceptors.add(LogInterceptor(requestBody: true, responseBody: true));
   }
 
   /// 获取指定服务商的 AI 模型列表
   Future<List<AIModel>> getModelList({required AIModelConfig config});
 
   /// 流式返回
-  Stream<ChatMessage?> completions({
+  Stream<ChatMessage?> chatCompletions({
     required AIModelConfig config,
     required AIModel model,
     required Conversation conversation,
@@ -30,7 +30,7 @@ abstract class AIRequestService {
   });
 
   /// 一次性返回，非流式
-  Future<ChatMessage?> completionsOnce({
+  Future<ChatMessage?> chatCompletionsOnce({
     required AIModelConfig config,
     required AIModel model,
     required Conversation conversation,
@@ -56,6 +56,8 @@ abstract class AIRequestService {
         return OpenAIRequestService();
       case AIProviderType.volcanoEngine:
         return VolcanoEngineRequestService();
+      case AIProviderType.ollama:
+        return OpenAIRequestService();
       default:
         throw Exception('Unsupported AI provider: ${config.provider}');
     }

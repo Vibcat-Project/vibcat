@@ -11,7 +11,7 @@ import '../data/schema/conversation.dart';
 
 class GeminiRequestService extends OpenAIRequestService {
   @override
-  Stream<ChatMessage?> completions({
+  Stream<ChatMessage?> chatCompletions({
     required AIModelConfig config,
     required AIModel model,
     required Conversation conversation,

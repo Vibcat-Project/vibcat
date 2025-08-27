@@ -31,6 +31,7 @@ enum AIProviderType {
     plainName: 'Deepseek',
     endPoint: 'https://api.deepseek.com/v1',
     icon: AppImage.providerDeepseek,
+    compatibleOpenAI: true,
   ),
   siliconFlow(
     plainName: '硅基流动',
@@ -58,9 +59,10 @@ enum AIProviderType {
   ),
   ollama(
     plainName: 'Ollama',
-    endPoint: 'http://localhost:11434',
+    endPoint: 'http://localhost:11434/v1',
     icon: AppImage.providerOllama,
     customEndPoint: true,
+    compatibleOpenAI: true,
   );
 
   final String plainName;
