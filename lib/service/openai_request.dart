@@ -110,7 +110,7 @@ class OpenAIRequestService extends AIRequestService {
   }
 
   @override
-  Future<ChatMessage> completionsOnce({
+  Future<ChatMessage?> completionsOnce({
     required AIModelConfig config,
     required AIModel model,
     required Conversation conversation,

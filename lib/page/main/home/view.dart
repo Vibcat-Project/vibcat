@@ -133,7 +133,7 @@ class HomeComponent extends StatelessWidget {
                             color: GlobalStore.themeExt.border!,
                           ),
                         ),
-                        child: Text(
+                        child: SelectableText(
                           item.content ?? '',
                           style: TextStyle(fontSize: 16),
                         ),
@@ -165,43 +165,53 @@ class HomeComponent extends StatelessWidget {
                   if (item.reasoning != null && item.reasoning!.isNotEmpty)
                     Container(
                       margin: EdgeInsets.only(top: 20),
-                      padding: EdgeInsets.all(10),
                       decoration: BoxDecoration(
                         color: GlobalStore.themeExt.border,
                         borderRadius: BorderRadius.circular(15),
                       ),
-                      child: ShaderMask(
-                        shaderCallback: (Rect bounds) {
-                          return LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [
-                              Colors.transparent, // 顶部透明（渐变开始）
-                              Colors.black, // 中间完全可见
-                              Colors.black, // 中间完全可见
-                              Colors.transparent, // 底部透明（渐变结束）
-                            ],
-                            stops: [0.0, 0.4, 0.6, 1.0], // 控制渐变区间
-                          ).createShader(bounds);
-                        },
-                        blendMode: BlendMode.dstIn,
-                        child: ConstrainedBox(
-                          // 最大显示行数
-                          // maxHeight = fontSize * lineHeight * maxLines
-                          constraints: BoxConstraints(maxHeight: 14 * 1.4 * 4),
-                          child: SingleChildScrollView(
-                            controller: logic.reasoningController,
-                            physics: NeverScrollableScrollPhysics(),
-                            reverse: true, // 从下往上滚动
-                            child: SizedBox(
-                              width: double.infinity,
-                              child: Text(
-                                item.reasoning!.trim(),
-                                style: TextStyle(fontSize: 14, height: 1.4),
+                      child: Stack(
+                        children: [
+                          // 原始内容
+                          Padding(
+                            padding: EdgeInsets.all(10),
+                            child: ConstrainedBox(
+                              constraints: BoxConstraints(
+                                // 最大显示行数
+                                // maxHeight = fontSize * lineHeight * maxLines
+                                maxHeight: 14 * 1.4 * 4,
+                              ),
+                              child: SingleChildScrollView(
+                                controller:
+                                    index == state.chatMessage.length - 1
+                                    ? logic.reasoningController
+                                    : null,
+                                physics: NeverScrollableScrollPhysics(),
+                                // reverse: true,
+                                child: SizedBox(
+                                  width: double.infinity,
+                                  child: Text(
+                                    item.reasoning!.trim(),
+                                    style: TextStyle(fontSize: 14, height: 1.4),
+                                  ),
+                                ),
                               ),
                             ),
                           ),
-                        ),
+                          // 顶部模糊层
+                          // Positioned.fill(
+                          //   child: ClipRRect(
+                          //     borderRadius: BorderRadius.circular(15),
+                          //     child: BackdropFilter(
+                          //       filter: ImageFilter.blur(sigmaX: 2, sigmaY: 2),
+                          //       child: Container(
+                          //         decoration: BoxDecoration(
+                          //           color: Colors.black.withOpacity(0.01),
+                          //         ),
+                          //       ),
+                          //     ),
+                          //   ),
+                          // ),
+                        ],
                       ),
                     ),
                   Container(
@@ -324,7 +334,11 @@ class HomeComponent extends StatelessWidget {
                 onSelected: (v) => logic.changeThinkType(v),
               ),
               SizedBox(width: 10),
-              _roundButton(icon: Icon(AppIcon.network), text: '联网'),
+              _roundButton(
+                icon: Icon(AppIcon.network),
+                text: '联网',
+                onTap: () => logic.scrollReasoningToBottom(),
+              ),
               Spacer(),
               _roundButton(
                 icon: Icon(

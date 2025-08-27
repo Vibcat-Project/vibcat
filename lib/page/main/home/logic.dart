@@ -32,6 +32,8 @@ class HomeLogic extends GetxController with GetSingleTickerProviderStateMixin {
 
   late AnimationController pulseController;
 
+  bool _currentReasoningScrollFinished = true;
+
   @override
   void onInit() {
     super.onInit();
@@ -125,7 +127,7 @@ class HomeLogic extends GetxController with GetSingleTickerProviderStateMixin {
     state.thinkType.value = type;
   }
 
-  void chat() async {
+  void chat([retry = false]) async {
     if (state.isResponding.value) {
       return;
     }
@@ -207,6 +209,10 @@ class HomeLogic extends GetxController with GetSingleTickerProviderStateMixin {
         responseMsg.status = ChatMessageStatus.failed;
         state.chatMessage.refresh();
 
+        if (!state.isTemporaryChat.value) {
+          await _repoDBApp.upsertChatMessage(responseMsg);
+        }
+
         HapticUtil.error();
         return;
       }
@@ -235,15 +241,31 @@ class HomeLogic extends GetxController with GetSingleTickerProviderStateMixin {
   }
 
   void scrollReasoningToBottom() {
-    if (reasoningController.hasClients) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        reasoningController.animateTo(
-          0.0, // reverse: true 时，0.0 是底部
-          duration: Duration(milliseconds: 100),
-          curve: Curves.easeOut,
-        );
-      });
-    }
+    if (!reasoningController.hasClients) return;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (reasoningController.positions.length != 1) return;
+
+      final position = reasoningController.position;
+      if (!position.hasContentDimensions) return;
+
+      // 若 ScrollView 使用了 reverse ，就用 extentBefore 或者 minScrollExtent - pixels
+      final remainToBottom = position.extentAfter;
+
+      if (remainToBottom > 14 * 1.4 * 3) {
+        if (!_currentReasoningScrollFinished) return;
+
+        _currentReasoningScrollFinished = false;
+
+        reasoningController
+            .animateTo(
+              position.maxScrollExtent - (14 * 1.4), // reverse: true 时，0.0 是底部
+              duration: Duration(milliseconds: 300),
+              curve: Curves.easeOut,
+            )
+            .whenComplete(() => _currentReasoningScrollFinished = true);
+      }
+    });
   }
 
   @override

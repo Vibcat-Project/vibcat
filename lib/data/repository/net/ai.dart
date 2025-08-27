@@ -23,4 +23,23 @@ class AINetRepository {
       history: history,
     );
   }
+
+  Future<ChatMessage?> topicNaming({
+    required AIModelConfig config,
+    required AIModel model,
+    required Conversation conversation,
+    required List<ChatMessage> history,
+  }) async {
+    final result = await AIRequestService.create(config).completionsOnce(
+      config: config,
+      model: model,
+      conversation: conversation,
+      history: history,
+    );
+    if (result?.content?.isNotEmpty == true) {
+      return result;
+    }
+
+    return null;
+  }
 }

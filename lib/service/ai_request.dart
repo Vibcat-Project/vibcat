@@ -30,7 +30,7 @@ abstract class AIRequestService {
   });
 
   /// 一次性返回，非流式
-  Future<ChatMessage> completionsOnce({
+  Future<ChatMessage?> completionsOnce({
     required AIModelConfig config,
     required AIModel model,
     required Conversation conversation,
