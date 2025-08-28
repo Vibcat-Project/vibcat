@@ -315,21 +315,27 @@ class HomeComponent extends StatelessWidget {
     ),
   );
 
-  Widget _temporaryBody() => Container(
-    alignment: AlignmentGeometry.center,
+  Widget _emptyBody() => Container(
+    alignment: Alignment.center,
     margin: EdgeInsets.only(bottom: Get.mediaQuery.padding.bottom),
     child: SafeArea(
-      child: ImageLoader(name: AppImage.emojiPeekingEyes, size: 140),
+      child: TweenAnimationBuilder<double>(
+        key: ValueKey(state.isTemporaryChat.value),
+        tween: Tween(begin: 0.0, end: 1.0),
+        duration: const Duration(milliseconds: 600),
+        curve: Curves.elasticOut,
+        builder: (context, value, child) {
+          return Transform.scale(scale: value, child: child);
+        },
+        child: state.isTemporaryChat.value
+            ? ImageLoader(name: AppImage.emojiPeekingEyes, size: 140)
+            : ImageLoader(name: AppImage.logo, size: 100),
+      ),
     ),
   );
 
-  Widget _body() => Obx(() {
-    if (state.chatMessage.isNotEmpty) {
-      return _chatBody();
-    }
-
-    return state.isTemporaryChat.value ? _temporaryBody() : _chatBody();
-  });
+  Widget _body() =>
+      Obx(() => state.chatMessage.isNotEmpty ? _chatBody() : _emptyBody());
 
   Widget _roundButton({
     double? size = 32,

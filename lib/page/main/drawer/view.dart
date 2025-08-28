@@ -3,9 +3,11 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:vibcat/global/icons.dart';
+import 'package:vibcat/global/images.dart';
 import 'package:vibcat/global/store.dart';
 import 'package:vibcat/util/date.dart';
 import 'package:vibcat/util/haptic.dart';
+import 'package:vibcat/widget/image_loader.dart';
 
 import '../../../global/color.dart';
 import '../home/logic.dart';
@@ -327,14 +329,6 @@ class DrawerComponent extends StatelessWidget {
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
             Spacer(),
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: GlobalStore.themeExt.border,
-                borderRadius: BorderRadius.circular(100),
-              ),
-            ),
           ],
         ),
         onTap: () => logic.showSettingsSheet(),

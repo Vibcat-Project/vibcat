@@ -6,6 +6,7 @@ class ImageLoader extends StatelessWidget {
   final double? size;
   final double? width;
   final double? height;
+  final Color? color;
 
   const ImageLoader({
     super.key,
@@ -13,6 +14,7 @@ class ImageLoader extends StatelessWidget {
     this.size,
     this.width,
     this.height,
+    this.color,
   });
 
   @override
@@ -20,7 +22,12 @@ class ImageLoader extends StatelessWidget {
     final type = name.endsWith('.svg') ? 0 : 1;
 
     return type == 0
-        ? SvgPicture.asset(name, width: size ?? width, height: size ?? height)
+        ? SvgPicture.asset(
+            name,
+            width: size ?? width,
+            height: size ?? height,
+            color: color,
+          )
         : Image.asset(name, width: size ?? width, height: size ?? height);
   }
 }
