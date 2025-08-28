@@ -1,10 +1,12 @@
 import 'package:get/get.dart';
+import 'package:vibcat/data/repository/database/app_config_db.dart';
 import 'package:vibcat/data/repository/database/app_db.dart';
 import 'package:vibcat/data/repository/net/ai.dart';
 
 class AppBinding extends Bindings {
   @override
   void dependencies() {
+    Get.lazyPut(() => AppConfigDBRepository(), fenix: true);
     Get.lazyPut(() => AppDBRepository(), fenix: true);
     Get.lazyPut(() => AINetRepository(), fenix: true);
   }

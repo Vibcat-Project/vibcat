@@ -34,6 +34,15 @@ class AppDBRepository extends BaseDBRepository {
     return item;
   }
 
+  /// 获取指定的模型服务商（同步版本）
+  AIModelConfig? getAIModelConfigSync(int id) {
+    final item = isar.aIModelConfigs.where().idEqualTo(id).findFirstSync();
+
+    item?.loadAnyData();
+
+    return item;
+  }
+
   /// 删除指定的模型服务商
   Future<bool> deleteAIModelConfig(AIModelConfig config) async {
     return await isar.writeTxn(() async {

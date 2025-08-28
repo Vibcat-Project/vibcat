@@ -1,7 +1,7 @@
 import 'dart:convert';
 
 import 'package:dio/dio.dart';
-import 'package:vibcat/service/ai_request.dart';
+import 'package:vibcat/service/openai_request.dart';
 
 import '../data/bean/ai_model.dart';
 import '../data/schema/ai_model_config.dart';
@@ -9,7 +9,7 @@ import '../data/schema/chat_message.dart';
 import '../data/schema/conversation.dart';
 import '../enum/ai_think_type.dart';
 
-class VolcanoEngineRequestService extends AIRequestService {
+class VolcanoEngineRequestService extends OpenAIRequestService {
   @override
   Future<List<AIModel>> getModelList({required AIModelConfig config}) async {
     // 暂时没找到 火山引擎 的获取模型列表的 API 接口，只能先预置一份了 👎
@@ -124,16 +124,5 @@ class VolcanoEngineRequestService extends AIRequestService {
     } catch (e) {
       yield null;
     }
-  }
-
-  @override
-  Future<ChatMessage?> chatCompletionsOnce({
-    required AIModelConfig config,
-    required AIModel model,
-    required Conversation conversation,
-    required List<ChatMessage> history,
-  }) {
-    // TODO: implement completionsOnce
-    throw UnimplementedError();
   }
 }

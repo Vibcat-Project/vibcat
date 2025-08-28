@@ -44,7 +44,7 @@ class SettingsComponent extends StatelessWidget {
             title: Text('hapticFeedback'.tr, style: TextStyle(fontSize: 16)),
             trailing: Switch(
               value: state.hapticFeedbackEnabled.value,
-              onChanged: (v) => state.hapticFeedbackEnabled.value = v,
+              onChanged: logic.onHapticFeedbackChanged,
             ),
           ),
         ),

@@ -251,7 +251,7 @@ class DrawerComponent extends StatelessWidget {
           final link = LayerLink(); // 绑定 target/follower 的锚点
           final itemKey = GlobalKey(); // 取原 item 的宽高
 
-          Widget buildTile() => Material(
+          Widget buildTile({Function()? onTap}) => Material(
             color: AppColor.transparent,
             child: ListTile(
               tileColor: isSelected
@@ -270,11 +270,7 @@ class DrawerComponent extends StatelessWidget {
                 style: const TextStyle(overflow: TextOverflow.ellipsis),
               ),
               subtitle: Text(DateUtil.formatDateTime(item.updatedAt)),
-              onTap: () {
-                Get.find<HomeLogic>().loadConversation(item);
-                mainLogic.controlSlideDrawer(false);
-                state.currentIndex.value = index;
-              },
+              onTap: onTap,
             ),
           );
 
@@ -300,7 +296,13 @@ class DrawerComponent extends StatelessWidget {
                     buildItem: buildTile,
                   );
                 },
-                child: buildTile(),
+                child: buildTile(
+                  onTap: () {
+                    Get.find<HomeLogic>().loadConversation(item);
+                    mainLogic.controlSlideDrawer(false);
+                    state.currentIndex.value = index;
+                  },
+                ),
               ),
             ),
           );

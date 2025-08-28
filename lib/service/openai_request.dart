@@ -65,7 +65,7 @@ class OpenAIRequestService extends AIRequestService {
 
       await for (final line in stream) {
         if (line.startsWith('data: ')) {
-          print(line);
+          // print(line);
 
           final jsonStr = line.substring(6).trim();
           if (jsonStr == '[DONE]') break;
@@ -102,7 +102,7 @@ class OpenAIRequestService extends AIRequestService {
           }
         }
       }
-    } on DioException catch (e)  {
+    } on DioException catch (e) {
       yield null;
     } catch (e) {
       yield null;
@@ -115,8 +115,31 @@ class OpenAIRequestService extends AIRequestService {
     required AIModel model,
     required Conversation conversation,
     required List<ChatMessage> history,
-  }) {
-    // TODO: implement completionsOnce
-    throw UnimplementedError();
+  }) async {
+    try {
+      final messages = history
+          .map((item) => {'role': item.role.name, 'content': item.content})
+          .toList();
+
+      final res = await dio.post(
+        '${config.endPoint}/chat/completions',
+        data: {'model': model.id, 'messages': messages, 'stream': false},
+        options: Options(headers: {'Authorization': 'Bearer ${config.apiKey}'}),
+      );
+      if (res.statusCode != 200) {
+        return null;
+      }
+
+      if (res.data['choices'].isEmpty) {
+        return null;
+      }
+
+      final content = res.data['choices'][0]['message']['content'];
+      return ChatMessage()..content = content;
+    } on DioException catch (e) {
+      return null;
+    } catch (e) {
+      return null;
+    }
   }
 }

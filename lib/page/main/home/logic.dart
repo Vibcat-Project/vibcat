@@ -4,6 +4,7 @@ import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 import 'package:vibcat/component/select_model/logic.dart';
 import 'package:vibcat/component/select_model/view.dart';
+import 'package:vibcat/data/bean/ai_model.dart';
 import 'package:vibcat/data/repository/database/app_db.dart';
 import 'package:vibcat/data/repository/net/ai.dart';
 import 'package:vibcat/data/schema/chat_message.dart';
@@ -12,6 +13,8 @@ import 'package:vibcat/enum/ai_think_type.dart';
 import 'package:vibcat/enum/chat_message_status.dart';
 import 'package:vibcat/enum/chat_message_type.dart';
 import 'package:vibcat/enum/chat_role.dart';
+import 'package:vibcat/global/prompts.dart';
+import 'package:vibcat/global/store.dart';
 import 'package:vibcat/page/main/drawer/logic.dart';
 import 'package:vibcat/util/app.dart';
 import 'package:vibcat/util/dialog.dart';
@@ -33,6 +36,10 @@ class HomeLogic extends GetxController with GetSingleTickerProviderStateMixin {
 
   // fontSize * lineHeight
   final double reasoningTextHeight = 14 * 1.4;
+
+  // GlobalKey 用于获取最后一个消息 widget 的高度
+  final lastUserMsgKey = GlobalKey();
+  final lastAIMsgKey = GlobalKey();
 
   bool _currentReasoningScrollFinished = true;
   DateTime? _reasoningStartTime;
@@ -84,9 +91,21 @@ class HomeLogic extends GetxController with GetSingleTickerProviderStateMixin {
     state
       ..isTemporaryChat.value = temporary
       ..currentConversation.value = null
-      ..chatMessage.clear();
+      ..chatMessage.clear()
+      ..listBottomPadding.value = 0
+      ..showAppbarDivider.value = false;
     // state.currentAIModelConfig.value = null;
     // state.currentAIModel.value = null;
+
+    // 根据配置决定新对话模型选择
+    if (!GlobalStore.config.newConvUseLastModel &&
+        GlobalStore.config.isValidDefaultConvModel) {
+      state
+        ..currentAIModelConfig.value = GlobalStore.config.defaultConvAIProvider!
+        ..currentAIModel.value = AIModel(
+          id: GlobalStore.config.defaultConvAIProviderModelId!,
+        );
+    }
 
     // 通知 DrawerLogic 继续处理逻辑
     Get.find<DrawerLogic>().refreshList(newConv: true);
@@ -96,7 +115,8 @@ class HomeLogic extends GetxController with GetSingleTickerProviderStateMixin {
   Future<void> loadConversation(Conversation conversation) async {
     state
       ..isTemporaryChat.value = false
-      ..currentConversation.value = conversation;
+      ..currentConversation.value = conversation
+      ..listBottomPadding.value = 0;
 
     // 加载 AI 模型配置
     await _loadConversationModel(conversation);
@@ -110,6 +130,7 @@ class HomeLogic extends GetxController with GetSingleTickerProviderStateMixin {
 
   /// 加载对话的 AI 模型配置
   Future<void> _loadConversationModel(Conversation conversation) async {
+    // TODO: 这里可能需要遵循默认模型配置策略
     state
       ..currentAIModelConfig.value = await _repoDBApp.getAIModelConfig(
         conversation.aiConfigId,
@@ -312,6 +333,9 @@ class HomeLogic extends GetxController with GetSingleTickerProviderStateMixin {
 
     state.chatMessage.add(msg);
     HapticUtil.soft();
+
+    await AppUtil.waitKeyboardClosed();
+    await _adjustPaddingAndScroll(isStreaming: false);
   }
 
   /// 处理聊天响应
@@ -327,6 +351,7 @@ class HomeLogic extends GetxController with GetSingleTickerProviderStateMixin {
     // 创建响应消息
     final responseMsg = _createResponseMessage(conv);
     state.chatMessage.add(responseMsg);
+    // await _adjustPaddingAndScroll(isStreaming: true);
 
     // 处理流式响应
     await _processResponseStream(stream, responseMsg);
@@ -398,6 +423,62 @@ class HomeLogic extends GetxController with GetSingleTickerProviderStateMixin {
     }
 
     state.chatMessage.refresh();
+    await _adjustPaddingAndScroll(isStreaming: true);
+  }
+
+  /// 调整底部 padding 并执行滚动
+  /// isStreaming: 用于区分是用户初次发送还是AI流式更新，以采用不同滚动动画
+  Future<void> _adjustPaddingAndScroll({bool isStreaming = false}) async {
+    // 等待当前帧渲染完成，确保向列表添加新项目后，Flutter有机会计算其大小和位置。
+    await WidgetsBinding.instance.endOfFrame;
+
+    if (!listViewController.hasClients ||
+        lastUserMsgKey.currentContext == null) {
+      return;
+    }
+
+    final viewportHeight = listViewController.position.viewportDimension;
+    if (viewportHeight <= 0) return;
+
+    // 精确测量“固定块”的高度
+    final userRenderBox =
+        lastUserMsgKey.currentContext!.findRenderObject() as RenderBox;
+    final userMessageHeight =
+        userRenderBox.size.height + (6 * 2); // 6 是 Row 中 Container 的外边距
+
+    double aiMessageHeight = 0.0;
+    if (lastAIMsgKey.currentContext != null) {
+      final aiRenderBox =
+          lastAIMsgKey.currentContext!.findRenderObject() as RenderBox;
+      aiMessageHeight = aiRenderBox.size.height;
+    }
+
+    // “固定块”的总高度 = 用户消息高 + AI消息高
+    final double pinnedContentHeight = userMessageHeight + aiMessageHeight;
+
+    // 核心计算：用视口高度减去“固定块”高度，得出需要的padding
+    final double newPadding =
+        viewportHeight -
+        pinnedContentHeight -
+        // 这里是因为布局里的最外层 Container 和 ListView 都加了 SafeArea ，所以要减去
+        MediaQuery.of(lastUserMsgKey.currentContext!).padding.bottom -
+        Get.mediaQuery.viewInsets.bottom;
+
+    // 如果“固定块”比屏幕高，padding至少为0，不能是负数
+    state.listBottomPadding.value = newPadding > 0 ? newPadding : 0.0;
+
+    // 这是为了让UI在应用了新的padding值后重新布局，从而更新maxScrollExtent。
+    await WidgetsBinding.instance.endOfFrame;
+
+    if (isStreaming) {
+      // listViewController.jumpTo(listViewController.position.maxScrollExtent);
+    } else {
+      listViewController.animateTo(
+        listViewController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOutCubic,
+      );
+    }
   }
 
   /// 完成响应
@@ -410,6 +491,7 @@ class HomeLogic extends GetxController with GetSingleTickerProviderStateMixin {
     }
 
     HapticUtil.success();
+    _topicNaming();
   }
 
   /// 处理聊天错误
@@ -458,5 +540,34 @@ class HomeLogic extends GetxController with GetSingleTickerProviderStateMixin {
           curve: Curves.easeOut,
         )
         .whenComplete(() => _currentReasoningScrollFinished = true);
+  }
+
+  /// 话题命名（首轮对话完成才会执行）
+  void _topicNaming() async {
+    if (!GlobalStore.config.isValidTopicNamingModel) return;
+    if (state.chatMessage.where((e) => e.role != ChatRole.system).length != 2) {
+      return;
+    }
+
+    final result = await _repoNetAI.topicNaming(
+      config: GlobalStore.config.topicNamingAIProvider!,
+      model: AIModel(id: GlobalStore.config.topicNamingAIProviderModelId!),
+      conversation: state.currentConversation.value!,
+      history: List.of([
+        ChatMessage()
+          ..role = ChatRole.system
+          ..content = Prompts.topicNaming,
+        ...state.chatMessage,
+      ]),
+    );
+    if (result?.content == null) {
+      return;
+    }
+
+    await _repoDBApp.upsertConversation(
+      state.currentConversation.value!..title = result!.content!,
+    );
+
+    Get.find<DrawerLogic>().refreshList();
   }
 }
