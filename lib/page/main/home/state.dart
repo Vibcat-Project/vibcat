@@ -1,4 +1,5 @@
 import 'package:get/get.dart';
+import 'package:vibcat/bean/upload_file.dart';
 import 'package:vibcat/data/bean/ai_model.dart';
 import 'package:vibcat/data/schema/ai_model_config.dart';
 import 'package:vibcat/data/schema/chat_message.dart';
@@ -25,6 +26,7 @@ class HomeState {
   );
   final chatMessage = <ChatMessage>[].obs;
 
+  final selectedFiles = <UploadFileWrap>[].obs;
   final thinkType = AIThinkType.none.obs;
   final isResponding = false.obs;
   final isTemporaryChat = false.obs;

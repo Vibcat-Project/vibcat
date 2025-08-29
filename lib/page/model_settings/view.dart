@@ -99,7 +99,10 @@ class ModelSettingsPage extends StatelessWidget {
                             color: GlobalStore.themeExt.border!,
                           ),
                         ),
-                        child: ImageLoader(name: item.provider.icon, size: 16),
+                        child: ImageLoader.assets(
+                          name: item.provider.icon,
+                          size: 16,
+                        ),
                       ),
                       Expanded(
                         child: Container(

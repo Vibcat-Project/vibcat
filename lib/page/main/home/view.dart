@@ -4,6 +4,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:markdown_widget/markdown_widget.dart';
+import 'package:vibcat/bean/upload_file.dart';
 import 'package:vibcat/enum/ai_think_type.dart';
 import 'package:vibcat/enum/chat_message_status.dart';
 import 'package:vibcat/enum/chat_role.dart';
@@ -55,7 +56,7 @@ class HomeComponent extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   if (state.currentAIModel.value != null) ...[
-                    ImageLoader(
+                    ImageLoader.assets(
                       name:
                           state.currentAIModelConfig.value?.provider.icon ?? '',
                       size: 14,
@@ -121,39 +122,51 @@ class HomeComponent extends StatelessWidget {
               final isLastItem = index == state.chatMessage.length - 1;
 
               if (item.role == ChatRole.user) {
-                return Row(
-                  key:
-                      (index == state.chatMessage.length - 1 ||
-                          (index == state.chatMessage.length - 2 &&
-                              state.chatMessage.last.role ==
-                                  ChatRole.assistant))
-                      ? logic.lastUserMsgKey
-                      : null,
-                  mainAxisAlignment: MainAxisAlignment.end,
+                return Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    Container(
-                      margin: EdgeInsets.symmetric(vertical: 6),
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 8,
-                      ),
-                      constraints: BoxConstraints(maxWidth: Get.width * 0.8),
-                      decoration: BoxDecoration(
-                        color: GlobalStore.themeExt.container,
-                        borderRadius: BorderRadius.circular(20),
-                        border: BoxBorder.all(
-                          color: GlobalStore.themeExt.border!,
+                    // 图片、文件
+                    if (item.files.isNotEmpty)
+                      _buildFileContainer(item.files, 70, shrinkWrap: true),
+                    // 用户发送的内容
+                    Row(
+                      key:
+                          (index == state.chatMessage.length - 1 ||
+                              (index == state.chatMessage.length - 2 &&
+                                  state.chatMessage.last.role ==
+                                      ChatRole.assistant))
+                          ? logic.lastUserMsgKey
+                          : null,
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        Container(
+                          margin: EdgeInsets.symmetric(vertical: 6),
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
+                          constraints: BoxConstraints(
+                            maxWidth: Get.width * 0.8,
+                          ),
+                          decoration: BoxDecoration(
+                            color: GlobalStore.themeExt.container,
+                            borderRadius: BorderRadius.circular(20),
+                            border: BoxBorder.all(
+                              color: GlobalStore.themeExt.border!,
+                            ),
+                          ),
+                          child: SelectableText(
+                            item.content ?? '',
+                            style: TextStyle(
+                              fontSize: 16,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            minLines: 1,
+                            maxLines: 4,
+                          ),
                         ),
-                      ),
-                      child: SelectableText(
-                        item.content ?? '',
-                        style: TextStyle(
-                          fontSize: 16,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        minLines: 1,
-                        maxLines: 4,
-                      ),
+                      ],
                     ),
                   ],
                 );
@@ -328,8 +341,8 @@ class HomeComponent extends StatelessWidget {
           return Transform.scale(scale: value, child: child);
         },
         child: state.isTemporaryChat.value
-            ? ImageLoader(name: AppImage.emojiPeekingEyes, size: 140)
-            : ImageLoader(name: AppImage.logo, size: 100),
+            ? ImageLoader.assets(name: AppImage.emojiPeekingEyes, size: 140)
+            : ImageLoader.assets(name: AppImage.logo, size: 100),
       ),
     ),
   );
@@ -375,6 +388,68 @@ class HomeComponent extends StatelessWidget {
     );
   }
 
+  Widget _buildFile(
+    UploadFileWrap file,
+    int index,
+    double size, {
+    Function(int)? onTap,
+  }) {
+    final fontSize = 14.0;
+    final lineHeight = 1.2;
+
+    return GestureDetector(
+      onTap: () => onTap?.call(index),
+      child: file is UploadImage
+          ? ImageLoader.file(
+              file: file.file,
+              size: size,
+              borderRadius: 10,
+              fit: BoxFit.cover,
+            )
+          : Container(
+              width: size,
+              height: size,
+              padding: EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                color: GlobalStore.themeExt.border,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              alignment: AlignmentGeometry.center,
+              child: Text(
+                file.name,
+                style: TextStyle(
+                  fontSize: fontSize,
+                  height: lineHeight,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                maxLines: ((size - 8) / (fontSize * lineHeight)).floor(),
+              ),
+            ),
+    );
+  }
+
+  Widget _buildFileContainer(
+    List<UploadFileWrap> list,
+    double height, {
+    EdgeInsetsGeometry? padding,
+    bool shrinkWrap = false,
+    Function(int)? onTap,
+  }) {
+    return Container(
+      height: height + (padding?.vertical ?? 0),
+      padding: padding,
+      child: ListView.separated(
+        shrinkWrap: shrinkWrap,
+        scrollDirection: Axis.horizontal,
+        itemBuilder: (BuildContext context, int index) =>
+            _buildFile(list[index], index, height, onTap: onTap),
+        separatorBuilder: (BuildContext context, int index) =>
+            SizedBox(width: 10),
+        itemCount: list.length,
+      ),
+    );
+  }
+
   Widget _bottomBar() {
     return Container(
       padding: EdgeInsets.fromLTRB(10, 0, 10, 10),
@@ -386,6 +461,16 @@ class HomeComponent extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          if (state.selectedFiles.isNotEmpty)
+            _buildFileContainer(
+              state.selectedFiles,
+              70,
+              padding: EdgeInsets.only(top: 10),
+              onTap: (index) {
+                state.selectedFiles.clear();
+                state.selectedFiles.refresh();
+              },
+            ),
           TextField(
             decoration: InputDecoration(
               border: InputBorder.none,
@@ -399,7 +484,21 @@ class HomeComponent extends StatelessWidget {
           SizedBox(height: 10),
           Row(
             children: [
-              _roundButton(icon: Icon(AppIcon.add)),
+              PopupMenuButton(
+                color: GlobalStore.themeExt.container,
+                elevation: 10,
+                shadowColor: AppColor.black.withOpacity(0.5),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                clipBehavior: Clip.hardEdge,
+                itemBuilder: (_) => [
+                  PopupMenuItem(value: 'image', child: Text('addImage'.tr)),
+                  PopupMenuItem(value: 'file', child: Text('addFile'.tr)),
+                ],
+                onSelected: logic.addFile,
+                child: _roundButton(icon: Icon(AppIcon.add)),
+              ),
               SizedBox(width: 10),
               PopupMenuButton(
                 color: GlobalStore.themeExt.container,
@@ -417,7 +516,6 @@ class HomeComponent extends StatelessWidget {
                   color: state.thinkType.value == AIThinkType.none
                       ? null
                       : GlobalStore.themeExt.border,
-                  // onTap: () => logic.changeThinkType(),
                 ),
                 itemBuilder: (_) => AIThinkType.values
                     .map(

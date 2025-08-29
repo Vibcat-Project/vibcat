@@ -8,7 +8,9 @@ import 'package:vibcat/data/schema/conversation.dart';
 import 'package:vibcat/enum/ai_provider_type.dart';
 import 'package:vibcat/service/gemini_request.dart';
 import 'package:vibcat/service/volcano_engine_request.dart';
+import 'package:vibcat/util/file.dart';
 
+import '../bean/upload_file.dart';
 import 'openai_request.dart';
 
 abstract class AIRequestService {
@@ -62,6 +64,46 @@ abstract class AIRequestService {
         throw Exception('Unsupported AI provider: ${config.provider}');
     }
   }
+
+  Future<List> transformMessages(List<ChatMessage> messages) async =>
+      await Future.wait(
+        messages.map((item) async {
+          if (item.files.isNotEmpty) {
+            final contents = [
+              {'type': 'text', 'text': item.content},
+              ...await Future.wait(
+                item.files.map((e) async {
+                  if (e is UploadImage) {
+                    return {
+                      'type': 'image_url',
+                      'image_url': {
+                        'url': await FileUtil.fileToBase64DataUri(
+                          e.file,
+                          mimeType: e.mimeType,
+                        ),
+                      },
+                    };
+                  } else {
+                    return {
+                      'type': 'file',
+                      'file': {
+                        'file_data': await FileUtil.fileToBase64DataUri(
+                          e.file,
+                          mimeType: e.mimeType,
+                        ),
+                      },
+                    };
+                  }
+                }),
+              ),
+            ];
+
+            return {'role': item.role.name, 'content': contents};
+          } else {
+            return {'role': item.role.name, 'content': item.content};
+          }
+        }),
+      );
 
   dynamic transformStream(Response<dynamic> response) {
     return response.data.stream

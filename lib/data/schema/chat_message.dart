@@ -1,5 +1,6 @@
 import 'package:flutter/widgets.dart';
 import 'package:isar/isar.dart';
+import 'package:vibcat/bean/upload_file.dart';
 import 'package:vibcat/data/schema/base.dart';
 import 'package:vibcat/enum/chat_message_status.dart';
 import 'package:vibcat/enum/chat_message_type.dart';
@@ -20,7 +21,12 @@ class ChatMessage extends BaseSchema {
 
   String? content;
   String? reasoning;
-  String? mediaUrl;
+
+  @protected
+  List<String> filePaths = [];
+
+  @ignore
+  List<UploadFileWrap> files = [];
 
   @Enumerated(EnumType.name)
   ChatMessageStatus? status;
@@ -39,6 +45,8 @@ class ChatMessage extends BaseSchema {
   /// 保存前：把 metadata 转成 JSON
   void prepareForSave() {
     metadataJson = metadata == null ? null : JsonUtil.mapToJson(metadata!);
+
+    filePaths = files.map((e) => e.file.path).toList();
   }
 
   /// 加载后：把 JSON 转回 Map
@@ -46,5 +54,7 @@ class ChatMessage extends BaseSchema {
     if (metadataJson != null) {
       metadata = JsonUtil.mapFromJson(metadataJson!);
     }
+
+    // TODO: filePaths 要转回
   }
 }

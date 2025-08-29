@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
+import 'package:vibcat/bean/upload_file.dart';
 import 'package:vibcat/component/select_model/logic.dart';
 import 'package:vibcat/component/select_model/view.dart';
 import 'package:vibcat/data/bean/ai_model.dart';
@@ -18,6 +19,7 @@ import 'package:vibcat/global/store.dart';
 import 'package:vibcat/page/main/drawer/logic.dart';
 import 'package:vibcat/util/app.dart';
 import 'package:vibcat/util/dialog.dart';
+import 'package:vibcat/util/file_picker.dart';
 import 'package:vibcat/util/haptic.dart';
 import 'package:vibcat/widget/blur_bottom_sheet.dart';
 
@@ -325,13 +327,18 @@ class HomeLogic extends GetxController with GetSingleTickerProviderStateMixin {
       ..conversationId = conv.id
       ..role = ChatRole.user
       ..type = ChatMessageType.text
-      ..content = prompt;
+      ..content = prompt
+      ..files = List.of(state.selectedFiles);
+    // ..files = state.selectedFiles.map((e) => e.deepCopy()).toList();
 
     if (!state.isTemporaryChat.value) {
       await _repoDBApp.upsertChatMessage(msg);
     }
 
-    state.chatMessage.add(msg);
+    state
+      ..selectedFiles.clear()
+      ..chatMessage.add(msg);
+
     HapticUtil.soft();
 
     await AppUtil.waitKeyboardClosed();
@@ -544,14 +551,22 @@ class HomeLogic extends GetxController with GetSingleTickerProviderStateMixin {
 
   /// 话题命名（首轮对话完成才会执行）
   void _topicNaming() async {
-    if (!GlobalStore.config.isValidTopicNamingModel) return;
+    if (state.isTemporaryChat.value) return;
     if (state.chatMessage.where((e) => e.role != ChatRole.system).length != 2) {
       return;
     }
 
+    var modelConfig = state.currentAIModelConfig.value;
+    var model = state.currentAIModel.value;
+    if (GlobalStore.config.isValidTopicNamingModel) {
+      // 若存在默认配置，则直接使用
+      modelConfig = GlobalStore.config.topicNamingAIProvider;
+      model = AIModel(id: GlobalStore.config.topicNamingAIProviderModelId!);
+    }
+
     final result = await _repoNetAI.topicNaming(
-      config: GlobalStore.config.topicNamingAIProvider!,
-      model: AIModel(id: GlobalStore.config.topicNamingAIProviderModelId!),
+      config: modelConfig!,
+      model: model!,
       conversation: state.currentConversation.value!,
       history: List.of([
         ChatMessage()
@@ -569,5 +584,22 @@ class HomeLogic extends GetxController with GetSingleTickerProviderStateMixin {
     );
 
     Get.find<DrawerLogic>().refreshList();
+  }
+
+  void addFile(String type) async {
+    switch (type) {
+      case 'image':
+        final image = await FilePickerUtil.pickImage();
+        if (image != null) {
+          state.selectedFiles.add(UploadImage(image));
+        }
+        break;
+      case 'file':
+        final file = await FilePickerUtil.pickFile();
+        if (file != null) {
+          state.selectedFiles.add(UploadFile(file));
+        }
+        break;
+    }
   }
 }

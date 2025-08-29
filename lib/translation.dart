@@ -42,6 +42,8 @@ class Translation extends Translations {
       'delete': '删除',
       'addModelProviderFirst': '请先添加一个模型服务商 🙃',
       'reasoningTimeConsuming': '😇 已思考完毕（耗时：@time）',
+      'addImage': '添加图片',
+      'addFile': '添加文件',
 
       'dataLoadFail': '不好，数据获取失败辣！！ 🥺',
     },

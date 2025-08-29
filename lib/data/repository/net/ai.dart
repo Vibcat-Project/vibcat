@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:vibcat/data/bean/ai_model.dart';
 import 'package:vibcat/data/schema/ai_model_config.dart';
 import 'package:vibcat/service/ai_request.dart';
@@ -34,7 +36,12 @@ class AINetRepository {
       config: config,
       model: model,
       conversation: conversation,
-      history: history,
+      history: history.map((e) {
+        return ChatMessage()
+          ..role = e.role
+          ..content = e.content
+          ..files = []; // 只清空副本的 files
+      }).toList(),
     );
     if (result?.content?.isNotEmpty == true) {
       return result;

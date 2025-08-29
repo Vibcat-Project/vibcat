@@ -169,7 +169,7 @@ class _BlurBottomSheetState extends State<BlurBottomSheet>
           ),
           Align(
             alignment: AlignmentGeometry.bottomCenter,
-            child: Container(height: 1, color: GlobalStore.themeExt.divider),
+            child: Divider(height: 1, thickness: 0.1),
           ),
         ],
       ),

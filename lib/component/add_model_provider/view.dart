@@ -145,7 +145,7 @@ class AddModelProviderComponent extends StatelessWidget {
                 shape: BoxShape.circle,
                 border: BoxBorder.all(color: GlobalStore.themeExt.border!),
               ),
-              child: ImageLoader(name: item.icon, size: 20),
+              child: ImageLoader.assets(name: item.icon, size: 20),
             ),
             title: Text(item.plainName),
             onTap: () {

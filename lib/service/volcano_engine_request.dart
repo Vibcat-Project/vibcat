@@ -69,10 +69,6 @@ class VolcanoEngineRequestService extends OpenAIRequestService {
     required List<ChatMessage> history,
   }) async* {
     try {
-      final messages = history
-          .map((item) => {'role': item.role.name, 'content': item.content})
-          .toList();
-
       final thinkingType = conversation.thinkType == AIThinkType.none
           ? 'disabled'
           : (conversation.thinkType == AIThinkType.auto ? 'auto' : 'enabled');
@@ -81,7 +77,7 @@ class VolcanoEngineRequestService extends OpenAIRequestService {
         '${config.endPoint}/chat/completions',
         data: {
           'model': model.id,
-          'messages': messages,
+          'messages': await transformMessages(history),
           'stream': true,
           'stream_options': {'include_usage': true},
           "extra_body": {

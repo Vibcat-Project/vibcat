@@ -33,7 +33,7 @@ class SelectModelComponent extends StatelessWidget {
                     shape: BoxShape.circle,
                     border: Border.all(color: GlobalStore.themeExt.border!),
                   ),
-                  child: ImageLoader(name: item.provider.icon, size: 20),
+                  child: ImageLoader.assets(name: item.provider.icon, size: 20),
                 ),
                 title: Text(item.customName),
               ),
