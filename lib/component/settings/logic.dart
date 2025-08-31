@@ -15,7 +15,7 @@ class SettingsLogic extends GetxController {
         break;
       case 'onlineSearch':
         break;
-      case 'chatSettings':
+      case 'conversationSettings':
         AppRoute.toChatSettings();
         break;
       case 'otherSettings':

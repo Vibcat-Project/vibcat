@@ -104,6 +104,188 @@ class HomeComponent extends StatelessWidget {
     );
   }
 
+  Widget _buildUserMsg(int index) {
+    final item = state.chatMessage[index];
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        // 图片、文件
+        if (item.files.isNotEmpty)
+          _buildFileContainer(item.files, 70, shrinkWrap: true),
+        // 用户发送的内容
+        Row(
+          key:
+              (index == state.chatMessage.length - 1 ||
+                  (index == state.chatMessage.length - 2 &&
+                      state.chatMessage.last.role == ChatRole.assistant))
+              ? logic.lastUserMsgKey
+              : null,
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            Container(
+              margin: EdgeInsets.symmetric(vertical: 6),
+              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              constraints: BoxConstraints(maxWidth: Get.width * 0.8),
+              decoration: BoxDecoration(
+                color: GlobalStore.themeExt.container,
+                borderRadius: BorderRadius.circular(20),
+                border: BoxBorder.all(color: GlobalStore.themeExt.border!),
+              ),
+              child: SelectableText(
+                item.content ?? '',
+                style: TextStyle(fontSize: 16, overflow: TextOverflow.ellipsis),
+                minLines: 1,
+                maxLines: 4,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAssistantMsg(int index) {
+    final item = state.chatMessage[index];
+    final isLastItem = index == state.chatMessage.length - 1;
+
+    if (item.status == ChatMessageStatus.sending) {
+      return Row(
+        key: index == state.chatMessage.length - 1 ? logic.lastAIMsgKey : null,
+        children: [
+          Container(
+            margin: EdgeInsets.symmetric(vertical: 6),
+            padding: EdgeInsets.symmetric(vertical: 8),
+            child: AppLottie.loadingRainbowCatWidget(),
+          ),
+        ],
+      );
+    } else if (item.status == ChatMessageStatus.failed) {
+      return Wrap(
+        key: index == state.chatMessage.length - 1 ? logic.lastAIMsgKey : null,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: [
+          Container(
+            margin: EdgeInsets.symmetric(vertical: 20),
+            padding: EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: GlobalStore.themeExt.border,
+              borderRadius: BorderRadius.circular(15),
+            ),
+            child: Text('dataLoadFail'.tr, style: TextStyle(fontSize: 15)),
+          ),
+          if (isLastItem)
+            IconButton(
+              onPressed: () => logic.chat(true),
+              icon: Icon(Icons.refresh),
+            ),
+        ],
+      );
+    }
+
+    return Column(
+      key: index == state.chatMessage.length - 1 ? logic.lastAIMsgKey : null,
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // 思考内容
+        if (item.reasoning != null && item.reasoning!.isNotEmpty)
+          Container(
+            margin: EdgeInsets.only(top: 20),
+            decoration: BoxDecoration(
+              color: GlobalStore.themeExt.border,
+              borderRadius: BorderRadius.circular(15),
+            ),
+            child: Stack(
+              children: [
+                AnimatedSize(
+                  duration: Duration(milliseconds: 300),
+                  curve: Curves.easeInOut,
+                  child: item.status == ChatMessageStatus.reasoning
+                      ? ShaderMask(
+                          shaderCallback: (Rect bounds) {
+                            return LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              colors: [
+                                // 顶部透明（渐变开始）
+                                Colors.transparent,
+                                // 中间完全可见
+                                Colors.black,
+                                // 底部透明（渐变结束）
+                                Colors.transparent,
+                              ],
+                              stops: [0, 0.5, 1], // 控制渐变区间
+                            ).createShader(bounds);
+                          },
+                          blendMode: BlendMode.dstIn,
+                          child: Padding(
+                            padding: EdgeInsets.all(10),
+                            child: ConstrainedBox(
+                              constraints: BoxConstraints(
+                                // 最大显示行数
+                                // maxHeight = fontSize * lineHeight * maxLines
+                                maxHeight: logic.reasoningTextHeight * 4,
+                              ),
+                              child: SingleChildScrollView(
+                                controller: isLastItem
+                                    ? logic.reasoningController
+                                    : null,
+                                physics: NeverScrollableScrollPhysics(),
+                                // reverse: true,
+                                child: SizedBox(
+                                  width: double.infinity,
+                                  child: Text(
+                                    item.reasoning!.trim(),
+                                    style: TextStyle(fontSize: 14, height: 1.4),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        )
+                      : Padding(
+                          padding: EdgeInsets.all(10),
+                          child: Text(
+                            'reasoningTimeConsuming'.trParams({
+                              'time': item.reasoningTimeConsuming ?? '',
+                            }),
+                          ),
+                        ),
+                ),
+
+                // 顶部模糊层
+                // Positioned.fill(
+                //   child: ClipRRect(
+                //     borderRadius: BorderRadius.circular(15),
+                //     child: BackdropFilter(
+                //       filter: ImageFilter.blur(sigmaX: 2, sigmaY: 2),
+                //       child: Container(
+                //         decoration: BoxDecoration(
+                //           color: Colors.black.withOpacity(0.01),
+                //         ),
+                //       ),
+                //     ),
+                //   ),
+                // ),
+              ],
+            ),
+          ),
+        Container(
+          margin: EdgeInsets.symmetric(vertical: 6),
+          padding: EdgeInsets.symmetric(vertical: 8),
+          width: double.infinity,
+          child: MarkdownBlock(
+            data: item.content ?? '',
+            generator: MarkdownConfigs.generator,
+            config: MarkdownConfigs.config,
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _chatBody() => Container(
     padding: EdgeInsets.fromLTRB(16, 0, 16, Get.mediaQuery.padding.bottom),
     child: ClipRRect(
@@ -118,209 +300,11 @@ class HomeComponent extends StatelessWidget {
             ).add(MediaQuery.of(context).padding),
             itemCount: state.chatMessage.length,
             itemBuilder: (context, index) {
-              final item = state.chatMessage[index];
-              final isLastItem = index == state.chatMessage.length - 1;
-
-              if (item.role == ChatRole.user) {
-                return Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    // 图片、文件
-                    if (item.files.isNotEmpty)
-                      _buildFileContainer(item.files, 70, shrinkWrap: true),
-                    // 用户发送的内容
-                    Row(
-                      key:
-                          (index == state.chatMessage.length - 1 ||
-                              (index == state.chatMessage.length - 2 &&
-                                  state.chatMessage.last.role ==
-                                      ChatRole.assistant))
-                          ? logic.lastUserMsgKey
-                          : null,
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        Container(
-                          margin: EdgeInsets.symmetric(vertical: 6),
-                          padding: EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 8,
-                          ),
-                          constraints: BoxConstraints(
-                            maxWidth: Get.width * 0.8,
-                          ),
-                          decoration: BoxDecoration(
-                            color: GlobalStore.themeExt.container,
-                            borderRadius: BorderRadius.circular(20),
-                            border: BoxBorder.all(
-                              color: GlobalStore.themeExt.border!,
-                            ),
-                          ),
-                          child: SelectableText(
-                            item.content ?? '',
-                            style: TextStyle(
-                              fontSize: 16,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            minLines: 1,
-                            maxLines: 4,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                );
+              if (state.chatMessage[index].role == ChatRole.user) {
+                return _buildUserMsg(index);
               }
 
-              if (item.status == ChatMessageStatus.sending) {
-                return Row(
-                  key: index == state.chatMessage.length - 1
-                      ? logic.lastAIMsgKey
-                      : null,
-                  children: [
-                    Container(
-                      margin: EdgeInsets.symmetric(vertical: 6),
-                      padding: EdgeInsets.symmetric(vertical: 8),
-                      child: AppLottie.loadingRainbowCatWidget(),
-                    ),
-                  ],
-                );
-              } else if (item.status == ChatMessageStatus.failed) {
-                return Wrap(
-                  key: index == state.chatMessage.length - 1
-                      ? logic.lastAIMsgKey
-                      : null,
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  children: [
-                    Container(
-                      margin: EdgeInsets.symmetric(vertical: 20),
-                      padding: EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: GlobalStore.themeExt.border,
-                        borderRadius: BorderRadius.circular(15),
-                      ),
-                      child: Text(
-                        'dataLoadFail'.tr,
-                        style: TextStyle(fontSize: 15),
-                      ),
-                    ),
-                    if (isLastItem)
-                      IconButton(
-                        onPressed: () => logic.chat(true),
-                        icon: Icon(Icons.refresh),
-                      ),
-                  ],
-                );
-              }
-
-              return Column(
-                key: index == state.chatMessage.length - 1
-                    ? logic.lastAIMsgKey
-                    : null,
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // 思考内容
-                  if (item.reasoning != null && item.reasoning!.isNotEmpty)
-                    Container(
-                      margin: EdgeInsets.only(top: 20),
-                      decoration: BoxDecoration(
-                        color: GlobalStore.themeExt.border,
-                        borderRadius: BorderRadius.circular(15),
-                      ),
-                      child: Stack(
-                        children: [
-                          AnimatedSize(
-                            duration: Duration(milliseconds: 300),
-                            curve: Curves.easeInOut,
-                            child: item.status == ChatMessageStatus.reasoning
-                                ? ShaderMask(
-                                    shaderCallback: (Rect bounds) {
-                                      return LinearGradient(
-                                        begin: Alignment.topCenter,
-                                        end: Alignment.bottomCenter,
-                                        colors: [
-                                          // 顶部透明（渐变开始）
-                                          Colors.transparent,
-                                          // 中间完全可见
-                                          Colors.black,
-                                          // 底部透明（渐变结束）
-                                          Colors.transparent,
-                                        ],
-                                        stops: [0, 0.5, 1], // 控制渐变区间
-                                      ).createShader(bounds);
-                                    },
-                                    blendMode: BlendMode.dstIn,
-                                    child: Padding(
-                                      padding: EdgeInsets.all(10),
-                                      child: ConstrainedBox(
-                                        constraints: BoxConstraints(
-                                          // 最大显示行数
-                                          // maxHeight = fontSize * lineHeight * maxLines
-                                          maxHeight:
-                                              logic.reasoningTextHeight * 4,
-                                        ),
-                                        child: SingleChildScrollView(
-                                          controller: isLastItem
-                                              ? logic.reasoningController
-                                              : null,
-                                          physics:
-                                              NeverScrollableScrollPhysics(),
-                                          // reverse: true,
-                                          child: SizedBox(
-                                            width: double.infinity,
-                                            child: Text(
-                                              item.reasoning!.trim(),
-                                              style: TextStyle(
-                                                fontSize: 14,
-                                                height: 1.4,
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  )
-                                : Padding(
-                                    padding: EdgeInsets.all(10),
-                                    child: Text(
-                                      'reasoningTimeConsuming'.trParams({
-                                        'time':
-                                            item.reasoningTimeConsuming ?? '',
-                                      }),
-                                    ),
-                                  ),
-                          ),
-
-                          // 顶部模糊层
-                          // Positioned.fill(
-                          //   child: ClipRRect(
-                          //     borderRadius: BorderRadius.circular(15),
-                          //     child: BackdropFilter(
-                          //       filter: ImageFilter.blur(sigmaX: 2, sigmaY: 2),
-                          //       child: Container(
-                          //         decoration: BoxDecoration(
-                          //           color: Colors.black.withOpacity(0.01),
-                          //         ),
-                          //       ),
-                          //     ),
-                          //   ),
-                          // ),
-                        ],
-                      ),
-                    ),
-                  Container(
-                    margin: EdgeInsets.symmetric(vertical: 6),
-                    padding: EdgeInsets.symmetric(vertical: 8),
-                    width: double.infinity,
-                    child: MarkdownBlock(
-                      data: item.content ?? '',
-                      generator: MarkdownConfigs.generator,
-                      config: MarkdownConfigs.config,
-                    ),
-                  ),
-                ],
-              );
+              return _buildAssistantMsg(index);
             },
           ),
         ),

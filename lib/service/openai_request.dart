@@ -99,6 +99,9 @@ class OpenAIRequestService extends AIRequestService {
         }
       }
     } on DioException catch (e) {
+      if (e.response != null) {
+        print(e.response!.data);
+      }
       yield null;
     } catch (e) {
       yield null;

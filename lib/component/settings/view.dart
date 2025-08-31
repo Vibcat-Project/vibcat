@@ -34,13 +34,13 @@ class SettingsComponent extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        _listItem(Icons.ac_unit, 'modelSettings'),
-        _listItem(Icons.ac_unit, 'onlineSearch'),
-        _listItem(Icons.ac_unit, 'chatSettings'),
-        _listItem(Icons.ac_unit, 'otherSettings'),
+        _listItem(AppIcon.modelSettings, 'modelSettings'),
+        _listItem(AppIcon.onlineSearchSettings, 'onlineSearch'),
+        _listItem(AppIcon.conversationSettings, 'conversationSettings'),
+        _listItem(AppIcon.otherSettings, 'otherSettings'),
         Obx(
           () => ListTile(
-            leading: Icon(Icons.ac_unit),
+            leading: Icon(AppIcon.hapticSettings),
             title: Text('hapticFeedback'.tr, style: TextStyle(fontSize: 16)),
             trailing: Switch(
               value: state.hapticFeedbackEnabled.value,

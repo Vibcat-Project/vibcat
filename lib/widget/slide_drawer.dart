@@ -11,6 +11,7 @@ class SlideDrawer extends StatefulWidget {
   final Color? childBackgroundColor;
   final Color? drawerBackgroundColor;
   final SlideDrawerController? controller;
+  final Function()? onDragStart;
 
   // 新增：左滑相关参数
   final double leftSwipeMaxDistance; // 左滑最大距离
@@ -27,6 +28,7 @@ class SlideDrawer extends StatefulWidget {
     this.childBackgroundColor,
     this.drawerBackgroundColor,
     this.controller,
+    this.onDragStart,
     this.leftSwipeMaxDistance = 100, // 默认左滑最大距离200
     this.leftSwipeThreshold = 100, // 默认阈值100
     this.onLeftSwipeThresholdTrig,
@@ -88,6 +90,8 @@ class _SlideDrawerState extends State<SlideDrawer>
   }
 
   void _onHorizontalDragStart(DragStartDetails details) {
+    widget.onDragStart?.call();
+
     _isDragging = true;
     _isLeftSwiping = false;
     _hasTriggeredThreshold = false;

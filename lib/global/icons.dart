@@ -18,4 +18,9 @@ class AppIcon {
   static const arrowRight = IconData(0xe601, fontFamily: fontFamily);
   static const delete = IconData(0xe77b, fontFamily: fontFamily);
   static const edit = IconData(0xe7f3, fontFamily: fontFamily);
+  static const onlineSearchSettings = IconData(0xe6e7, fontFamily: fontFamily);
+  static const modelSettings = IconData(0xe68d, fontFamily: fontFamily);
+  static const conversationSettings = IconData(0xe6c3, fontFamily: fontFamily);
+  static const otherSettings = IconData(0xe645, fontFamily: fontFamily);
+  static const hapticSettings = IconData(0xe820, fontFamily: fontFamily);
 }

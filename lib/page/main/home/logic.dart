@@ -127,7 +127,7 @@ class HomeLogic extends GetxController with GetSingleTickerProviderStateMixin {
     await _loadChatMessages(conversation);
 
     // 滚动到底部
-    _scrollToBottom();
+    _scrollToBottom(false);
   }
 
   /// 加载对话的 AI 模型配置
@@ -150,10 +150,20 @@ class HomeLogic extends GetxController with GetSingleTickerProviderStateMixin {
   }
 
   /// 滚动到底部
-  void _scrollToBottom() {
+  void _scrollToBottom([bool anim = true]) async {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (listViewController.hasClients) {
-        listViewController.jumpTo(listViewController.position.maxScrollExtent);
+      if (anim) {
+        listViewController.animateTo(
+          listViewController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOutCubic,
+        );
+      } else {
+        if (listViewController.hasClients) {
+          listViewController.jumpTo(
+            listViewController.position.maxScrollExtent,
+          );
+        }
       }
     });
   }
@@ -437,55 +447,48 @@ class HomeLogic extends GetxController with GetSingleTickerProviderStateMixin {
   /// isStreaming: 用于区分是用户初次发送还是AI流式更新，以采用不同滚动动画
   Future<void> _adjustPaddingAndScroll({bool isStreaming = false}) async {
     // 等待当前帧渲染完成，确保向列表添加新项目后，Flutter有机会计算其大小和位置。
-    await WidgetsBinding.instance.endOfFrame;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!listViewController.hasClients ||
+          lastUserMsgKey.currentContext == null) {
+        return;
+      }
 
-    if (!listViewController.hasClients ||
-        lastUserMsgKey.currentContext == null) {
-      return;
-    }
+      final viewportHeight = listViewController.position.viewportDimension;
+      if (viewportHeight <= 0) return;
 
-    final viewportHeight = listViewController.position.viewportDimension;
-    if (viewportHeight <= 0) return;
+      // 精确测量“固定块”的高度
+      final userRenderBox =
+          lastUserMsgKey.currentContext!.findRenderObject() as RenderBox;
+      final userMessageHeight =
+          userRenderBox.size.height + (6 * 2); // 6 是 Row 中 Container 的外边距
 
-    // 精确测量“固定块”的高度
-    final userRenderBox =
-        lastUserMsgKey.currentContext!.findRenderObject() as RenderBox;
-    final userMessageHeight =
-        userRenderBox.size.height + (6 * 2); // 6 是 Row 中 Container 的外边距
+      double aiMessageHeight = 0.0;
+      if (lastAIMsgKey.currentContext != null) {
+        final aiRenderBox =
+            lastAIMsgKey.currentContext!.findRenderObject() as RenderBox;
+        aiMessageHeight = aiRenderBox.size.height;
+      }
 
-    double aiMessageHeight = 0.0;
-    if (lastAIMsgKey.currentContext != null) {
-      final aiRenderBox =
-          lastAIMsgKey.currentContext!.findRenderObject() as RenderBox;
-      aiMessageHeight = aiRenderBox.size.height;
-    }
+      // “固定块”的总高度 = 用户消息高 + AI消息高
+      final double pinnedContentHeight = userMessageHeight + aiMessageHeight;
 
-    // “固定块”的总高度 = 用户消息高 + AI消息高
-    final double pinnedContentHeight = userMessageHeight + aiMessageHeight;
+      // 核心计算：用视口高度减去“固定块”高度，得出需要的padding
+      final double newPadding =
+          viewportHeight -
+          pinnedContentHeight -
+          // 这里是因为布局里的最外层 Container 和 ListView 都加了 SafeArea ，所以要减去
+          MediaQuery.of(lastUserMsgKey.currentContext!).padding.bottom -
+          Get.mediaQuery.viewInsets.bottom;
 
-    // 核心计算：用视口高度减去“固定块”高度，得出需要的padding
-    final double newPadding =
-        viewportHeight -
-        pinnedContentHeight -
-        // 这里是因为布局里的最外层 Container 和 ListView 都加了 SafeArea ，所以要减去
-        MediaQuery.of(lastUserMsgKey.currentContext!).padding.bottom -
-        Get.mediaQuery.viewInsets.bottom;
+      // 如果“固定块”比屏幕高，padding至少为0，不能是负数
+      state.listBottomPadding.value = newPadding > 0 ? newPadding : 0.0;
 
-    // 如果“固定块”比屏幕高，padding至少为0，不能是负数
-    state.listBottomPadding.value = newPadding > 0 ? newPadding : 0.0;
-
-    // 这是为了让UI在应用了新的padding值后重新布局，从而更新maxScrollExtent。
-    await WidgetsBinding.instance.endOfFrame;
-
-    if (isStreaming) {
-      // listViewController.jumpTo(listViewController.position.maxScrollExtent);
-    } else {
-      listViewController.animateTo(
-        listViewController.position.maxScrollExtent,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeOutCubic,
-      );
-    }
+      if (isStreaming) {
+        // _scrollToBottom(!isStreaming);
+      } else {
+        _scrollToBottom(true);
+      }
+    });
   }
 
   /// 完成响应
