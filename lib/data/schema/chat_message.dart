@@ -34,6 +34,9 @@ class ChatMessage extends BaseSchema {
   // 思考耗时
   String? reasoningTimeConsuming;
 
+  int tokenInput = 0;
+  int tokenOutput = 0;
+
   // 存储 metadata 的 JSON 字符串
   @protected
   String? metadataJson;

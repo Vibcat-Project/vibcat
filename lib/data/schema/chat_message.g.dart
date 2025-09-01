@@ -64,14 +64,24 @@ const ChatMessageSchema = CollectionSchema(
       type: IsarType.string,
       enumMap: _ChatMessagestatusEnumValueMap,
     ),
-    r'type': PropertySchema(
+    r'tokenInput': PropertySchema(
       id: 9,
+      name: r'tokenInput',
+      type: IsarType.long,
+    ),
+    r'tokenOutput': PropertySchema(
+      id: 10,
+      name: r'tokenOutput',
+      type: IsarType.long,
+    ),
+    r'type': PropertySchema(
+      id: 11,
       name: r'type',
       type: IsarType.string,
       enumMap: _ChatMessagetypeEnumValueMap,
     ),
     r'updatedAt': PropertySchema(
-      id: 10,
+      id: 12,
       name: r'updatedAt',
       type: IsarType.dateTime,
     )
@@ -167,8 +177,10 @@ void _chatMessageSerialize(
   writer.writeString(offsets[6], object.reasoningTimeConsuming);
   writer.writeString(offsets[7], object.role.name);
   writer.writeString(offsets[8], object.status?.name);
-  writer.writeString(offsets[9], object.type.name);
-  writer.writeDateTime(offsets[10], object.updatedAt);
+  writer.writeLong(offsets[9], object.tokenInput);
+  writer.writeLong(offsets[10], object.tokenOutput);
+  writer.writeString(offsets[11], object.type.name);
+  writer.writeDateTime(offsets[12], object.updatedAt);
 }
 
 ChatMessage _chatMessageDeserialize(
@@ -191,10 +203,12 @@ ChatMessage _chatMessageDeserialize(
           ChatRole.system;
   object.status =
       _ChatMessagestatusValueEnumMap[reader.readStringOrNull(offsets[8])];
+  object.tokenInput = reader.readLong(offsets[9]);
+  object.tokenOutput = reader.readLong(offsets[10]);
   object.type =
-      _ChatMessagetypeValueEnumMap[reader.readStringOrNull(offsets[9])] ??
+      _ChatMessagetypeValueEnumMap[reader.readStringOrNull(offsets[11])] ??
           ChatMessageType.text;
-  object.updatedAt = reader.readDateTime(offsets[10]);
+  object.updatedAt = reader.readDateTime(offsets[12]);
   return object;
 }
 
@@ -226,9 +240,13 @@ P _chatMessageDeserializeProp<P>(
       return (_ChatMessagestatusValueEnumMap[reader.readStringOrNull(offset)])
           as P;
     case 9:
+      return (reader.readLong(offset)) as P;
+    case 10:
+      return (reader.readLong(offset)) as P;
+    case 11:
       return (_ChatMessagetypeValueEnumMap[reader.readStringOrNull(offset)] ??
           ChatMessageType.text) as P;
-    case 10:
+    case 12:
       return (reader.readDateTime(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -1756,6 +1774,118 @@ extension ChatMessageQueryFilter
     });
   }
 
+  QueryBuilder<ChatMessage, ChatMessage, QAfterFilterCondition>
+      tokenInputEqualTo(int value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'tokenInput',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<ChatMessage, ChatMessage, QAfterFilterCondition>
+      tokenInputGreaterThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'tokenInput',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<ChatMessage, ChatMessage, QAfterFilterCondition>
+      tokenInputLessThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'tokenInput',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<ChatMessage, ChatMessage, QAfterFilterCondition>
+      tokenInputBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'tokenInput',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<ChatMessage, ChatMessage, QAfterFilterCondition>
+      tokenOutputEqualTo(int value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'tokenOutput',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<ChatMessage, ChatMessage, QAfterFilterCondition>
+      tokenOutputGreaterThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'tokenOutput',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<ChatMessage, ChatMessage, QAfterFilterCondition>
+      tokenOutputLessThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'tokenOutput',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<ChatMessage, ChatMessage, QAfterFilterCondition>
+      tokenOutputBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'tokenOutput',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
   QueryBuilder<ChatMessage, ChatMessage, QAfterFilterCondition> typeEqualTo(
     ChatMessageType value, {
     bool caseSensitive = true,
@@ -2052,6 +2182,30 @@ extension ChatMessageQuerySortBy
     });
   }
 
+  QueryBuilder<ChatMessage, ChatMessage, QAfterSortBy> sortByTokenInput() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'tokenInput', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ChatMessage, ChatMessage, QAfterSortBy> sortByTokenInputDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'tokenInput', Sort.desc);
+    });
+  }
+
+  QueryBuilder<ChatMessage, ChatMessage, QAfterSortBy> sortByTokenOutput() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'tokenOutput', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ChatMessage, ChatMessage, QAfterSortBy> sortByTokenOutputDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'tokenOutput', Sort.desc);
+    });
+  }
+
   QueryBuilder<ChatMessage, ChatMessage, QAfterSortBy> sortByType() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'type', Sort.asc);
@@ -2191,6 +2345,30 @@ extension ChatMessageQuerySortThenBy
     });
   }
 
+  QueryBuilder<ChatMessage, ChatMessage, QAfterSortBy> thenByTokenInput() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'tokenInput', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ChatMessage, ChatMessage, QAfterSortBy> thenByTokenInputDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'tokenInput', Sort.desc);
+    });
+  }
+
+  QueryBuilder<ChatMessage, ChatMessage, QAfterSortBy> thenByTokenOutput() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'tokenOutput', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ChatMessage, ChatMessage, QAfterSortBy> thenByTokenOutputDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'tokenOutput', Sort.desc);
+    });
+  }
+
   QueryBuilder<ChatMessage, ChatMessage, QAfterSortBy> thenByType() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'type', Sort.asc);
@@ -2279,6 +2457,18 @@ extension ChatMessageQueryWhereDistinct
     });
   }
 
+  QueryBuilder<ChatMessage, ChatMessage, QDistinct> distinctByTokenInput() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'tokenInput');
+    });
+  }
+
+  QueryBuilder<ChatMessage, ChatMessage, QDistinct> distinctByTokenOutput() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'tokenOutput');
+    });
+  }
+
   QueryBuilder<ChatMessage, ChatMessage, QDistinct> distinctByType(
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
@@ -2355,6 +2545,18 @@ extension ChatMessageQueryProperty
       statusProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'status');
+    });
+  }
+
+  QueryBuilder<ChatMessage, int, QQueryOperations> tokenInputProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'tokenInput');
+    });
+  }
+
+  QueryBuilder<ChatMessage, int, QQueryOperations> tokenOutputProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'tokenOutput');
     });
   }
 

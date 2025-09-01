@@ -1,7 +1,9 @@
 import 'dart:math';
 
+import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:vibcat/bean/upload_file.dart';
 import 'package:vibcat/component/select_model/logic.dart';
 import 'package:vibcat/component/select_model/view.dart';
@@ -352,7 +354,7 @@ class HomeLogic extends GetxController with GetSingleTickerProviderStateMixin {
     HapticUtil.soft();
 
     await AppUtil.waitKeyboardClosed();
-    await _adjustPaddingAndScroll(isStreaming: false);
+    _adjustPaddingAndScroll(isStreaming: false);
   }
 
   /// 处理聊天响应
@@ -417,6 +419,8 @@ class HomeLogic extends GetxController with GetSingleTickerProviderStateMixin {
     dynamic delta,
     ChatMessage responseMsg,
   ) async {
+    final currentStatus = responseMsg.status;
+
     responseMsg
       ..status = ChatMessageStatus.streaming
       ..content = (responseMsg.content ?? '') + (delta.content ?? '');
@@ -439,13 +443,31 @@ class HomeLogic extends GetxController with GetSingleTickerProviderStateMixin {
       }
     }
 
-    state.chatMessage.refresh();
-    await _adjustPaddingAndScroll(isStreaming: true);
+    // 切换状态的情况下，先重更新一下 padding，避免由于 padding 值的问题和渲染时序问题导致列表 item 位移
+    if (currentStatus != responseMsg.status) {
+      _adjustPaddingAndScroll(
+        isStreaming: true,
+        changeStatus: true,
+        onMeasureFinished: () {
+          state.chatMessage.refresh();
+          _adjustPaddingAndScroll(isStreaming: true);
+        },
+      );
+    } else {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        state.chatMessage.refresh();
+        _adjustPaddingAndScroll(isStreaming: true);
+      });
+    }
   }
 
   /// 调整底部 padding 并执行滚动
   /// isStreaming: 用于区分是用户初次发送还是AI流式更新，以采用不同滚动动画
-  Future<void> _adjustPaddingAndScroll({bool isStreaming = false}) async {
+  void _adjustPaddingAndScroll({
+    bool isStreaming = false,
+    bool changeStatus = false,
+    Function? onMeasureFinished,
+  }) {
     // 等待当前帧渲染完成，确保向列表添加新项目后，Flutter有机会计算其大小和位置。
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!listViewController.hasClients ||
@@ -481,12 +503,22 @@ class HomeLogic extends GetxController with GetSingleTickerProviderStateMixin {
           Get.mediaQuery.viewInsets.bottom;
 
       // 如果“固定块”比屏幕高，padding至少为0，不能是负数
-      state.listBottomPadding.value = newPadding > 0 ? newPadding : 0.0;
+      state.listBottomPadding.value = changeStatus
+          ? viewportHeight
+          : (newPadding > 0 ? newPadding : 0.0);
 
-      if (isStreaming) {
-        // _scrollToBottom(!isStreaming);
+      if (changeStatus) {
+        if (onMeasureFinished != null) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            onMeasureFinished.call();
+          });
+        }
       } else {
-        _scrollToBottom(true);
+        if (isStreaming) {
+          // _scrollToBottom(!isStreaming);
+        } else {
+          _scrollToBottom(true);
+        }
       }
     });
   }
@@ -605,4 +637,15 @@ class HomeLogic extends GetxController with GetSingleTickerProviderStateMixin {
         break;
     }
   }
+
+  void copyAIMessage(ChatMessage msg) async {
+    await Clipboard.setData(ClipboardData(text: msg.content?.trim() ?? ''));
+    DialogUtil.showSnackBar('contentHasCopied'.tr);
+  }
+
+  void shareAIMessage(ChatMessage msg) async {
+    SharePlus.instance.share(ShareParams(text: msg.content?.trim()));
+  }
+
+  void showAIMessageMore(ChatMessage msg) async {}
 }

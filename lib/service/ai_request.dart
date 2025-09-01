@@ -47,19 +47,15 @@ abstract class AIRequestService {
 
     switch (config.provider) {
       case AIProviderType.openAI:
+      case AIProviderType.siliconFlow:
+      case AIProviderType.groq:
+      case AIProviderType.openRouter:
+      case AIProviderType.ollama:
         return OpenAIRequestService();
       case AIProviderType.gemini:
         return GeminiRequestService();
-      case AIProviderType.siliconFlow:
-        return OpenAIRequestService();
-      case AIProviderType.groq:
-        return OpenAIRequestService();
-      case AIProviderType.openRouter:
-        return OpenAIRequestService();
       case AIProviderType.volcanoEngine:
         return VolcanoEngineRequestService();
-      case AIProviderType.ollama:
-        return OpenAIRequestService();
       default:
         throw Exception('Unsupported AI provider: ${config.provider}');
     }

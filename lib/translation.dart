@@ -45,6 +45,7 @@ class Translation extends Translations {
       'addImage': '添加图片',
       'addFile': '添加文件',
       'dataLoadFail': '不好，数据获取失败辣！！ 🥺',
+      'contentHasCopied': '内容已复制 😎',
     },
     'en_US': {'appName': 'Vibcat', 'appSlogan': ''},
   };

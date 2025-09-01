@@ -23,4 +23,7 @@ class AppIcon {
   static const conversationSettings = IconData(0xe6c3, fontFamily: fontFamily);
   static const otherSettings = IconData(0xe645, fontFamily: fontFamily);
   static const hapticSettings = IconData(0xe820, fontFamily: fontFamily);
+  static const copy = IconData(0xe63d, fontFamily: fontFamily);
+  static const share = IconData(0xe620, fontFamily: fontFamily);
+  static const more = IconData(0xe66a, fontFamily: fontFamily);
 }

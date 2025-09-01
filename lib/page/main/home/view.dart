@@ -272,8 +272,10 @@ class HomeComponent extends StatelessWidget {
               ],
             ),
           ),
+
+        // Markdown 内容
         Container(
-          margin: EdgeInsets.symmetric(vertical: 6),
+          margin: EdgeInsets.only(top: 6),
           padding: EdgeInsets.symmetric(vertical: 8),
           width: double.infinity,
           child: MarkdownBlock(
@@ -282,6 +284,30 @@ class HomeComponent extends StatelessWidget {
             config: MarkdownConfigs.config,
           ),
         ),
+
+        // 消息底部操作按钮
+        if (item.status == ChatMessageStatus.success)
+          Container(
+            margin: EdgeInsets.only(bottom: 6),
+            child: Wrap(
+              children: [
+                GestureDetector(
+                  child: Icon(AppIcon.copy, size: 24),
+                  onTap: () => logic.copyAIMessage(item),
+                ),
+                SizedBox(width: 12),
+                GestureDetector(
+                  child: Icon(AppIcon.share, size: 24),
+                  onTap: () => logic.shareAIMessage(item),
+                ),
+                SizedBox(width: 12),
+                GestureDetector(
+                  child: Icon(AppIcon.more, size: 24),
+                  onTap: () => logic.showAIMessageMore(item),
+                ),
+              ],
+            ),
+          ),
       ],
     );
   }
@@ -451,7 +477,7 @@ class HomeComponent extends StatelessWidget {
               70,
               padding: EdgeInsets.only(top: 10),
               onTap: (index) {
-                state.selectedFiles.clear();
+                state.selectedFiles.removeAt(index);
                 state.selectedFiles.refresh();
               },
             ),
