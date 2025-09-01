@@ -36,6 +36,7 @@ class ChatMessage extends BaseSchema {
 
   int tokenInput = 0;
   int tokenOutput = 0;
+  int tokenReasoning = 0;
 
   // 存储 metadata 的 JSON 字符串
   @protected

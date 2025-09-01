@@ -12,7 +12,7 @@ class ChatSettingsPage extends StatelessWidget {
   final ChatSettingsLogic logic = Get.put(ChatSettingsLogic());
   final ChatSettingsState state = Get.find<ChatSettingsLogic>().state;
 
-  AppBar _appBar() => AppBar(title: Text('chatSettings'.tr));
+  AppBar _appBar() => AppBar(title: Text('conversationSettings'.tr));
 
   String? _limitText(String? text, [int maxLength = 14]) {
     if (text == null) return null;

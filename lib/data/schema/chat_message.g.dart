@@ -74,14 +74,19 @@ const ChatMessageSchema = CollectionSchema(
       name: r'tokenOutput',
       type: IsarType.long,
     ),
-    r'type': PropertySchema(
+    r'tokenReasoning': PropertySchema(
       id: 11,
+      name: r'tokenReasoning',
+      type: IsarType.long,
+    ),
+    r'type': PropertySchema(
+      id: 12,
       name: r'type',
       type: IsarType.string,
       enumMap: _ChatMessagetypeEnumValueMap,
     ),
     r'updatedAt': PropertySchema(
-      id: 12,
+      id: 13,
       name: r'updatedAt',
       type: IsarType.dateTime,
     )
@@ -179,8 +184,9 @@ void _chatMessageSerialize(
   writer.writeString(offsets[8], object.status?.name);
   writer.writeLong(offsets[9], object.tokenInput);
   writer.writeLong(offsets[10], object.tokenOutput);
-  writer.writeString(offsets[11], object.type.name);
-  writer.writeDateTime(offsets[12], object.updatedAt);
+  writer.writeLong(offsets[11], object.tokenReasoning);
+  writer.writeString(offsets[12], object.type.name);
+  writer.writeDateTime(offsets[13], object.updatedAt);
 }
 
 ChatMessage _chatMessageDeserialize(
@@ -205,10 +211,11 @@ ChatMessage _chatMessageDeserialize(
       _ChatMessagestatusValueEnumMap[reader.readStringOrNull(offsets[8])];
   object.tokenInput = reader.readLong(offsets[9]);
   object.tokenOutput = reader.readLong(offsets[10]);
+  object.tokenReasoning = reader.readLong(offsets[11]);
   object.type =
-      _ChatMessagetypeValueEnumMap[reader.readStringOrNull(offsets[11])] ??
+      _ChatMessagetypeValueEnumMap[reader.readStringOrNull(offsets[12])] ??
           ChatMessageType.text;
-  object.updatedAt = reader.readDateTime(offsets[12]);
+  object.updatedAt = reader.readDateTime(offsets[13]);
   return object;
 }
 
@@ -244,9 +251,11 @@ P _chatMessageDeserializeProp<P>(
     case 10:
       return (reader.readLong(offset)) as P;
     case 11:
+      return (reader.readLong(offset)) as P;
+    case 12:
       return (_ChatMessagetypeValueEnumMap[reader.readStringOrNull(offset)] ??
           ChatMessageType.text) as P;
-    case 12:
+    case 13:
       return (reader.readDateTime(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -1886,6 +1895,62 @@ extension ChatMessageQueryFilter
     });
   }
 
+  QueryBuilder<ChatMessage, ChatMessage, QAfterFilterCondition>
+      tokenReasoningEqualTo(int value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'tokenReasoning',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<ChatMessage, ChatMessage, QAfterFilterCondition>
+      tokenReasoningGreaterThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'tokenReasoning',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<ChatMessage, ChatMessage, QAfterFilterCondition>
+      tokenReasoningLessThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'tokenReasoning',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<ChatMessage, ChatMessage, QAfterFilterCondition>
+      tokenReasoningBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'tokenReasoning',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
   QueryBuilder<ChatMessage, ChatMessage, QAfterFilterCondition> typeEqualTo(
     ChatMessageType value, {
     bool caseSensitive = true,
@@ -2206,6 +2271,19 @@ extension ChatMessageQuerySortBy
     });
   }
 
+  QueryBuilder<ChatMessage, ChatMessage, QAfterSortBy> sortByTokenReasoning() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'tokenReasoning', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ChatMessage, ChatMessage, QAfterSortBy>
+      sortByTokenReasoningDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'tokenReasoning', Sort.desc);
+    });
+  }
+
   QueryBuilder<ChatMessage, ChatMessage, QAfterSortBy> sortByType() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'type', Sort.asc);
@@ -2369,6 +2447,19 @@ extension ChatMessageQuerySortThenBy
     });
   }
 
+  QueryBuilder<ChatMessage, ChatMessage, QAfterSortBy> thenByTokenReasoning() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'tokenReasoning', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ChatMessage, ChatMessage, QAfterSortBy>
+      thenByTokenReasoningDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'tokenReasoning', Sort.desc);
+    });
+  }
+
   QueryBuilder<ChatMessage, ChatMessage, QAfterSortBy> thenByType() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'type', Sort.asc);
@@ -2469,6 +2560,12 @@ extension ChatMessageQueryWhereDistinct
     });
   }
 
+  QueryBuilder<ChatMessage, ChatMessage, QDistinct> distinctByTokenReasoning() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'tokenReasoning');
+    });
+  }
+
   QueryBuilder<ChatMessage, ChatMessage, QDistinct> distinctByType(
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
@@ -2557,6 +2654,12 @@ extension ChatMessageQueryProperty
   QueryBuilder<ChatMessage, int, QQueryOperations> tokenOutputProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'tokenOutput');
+    });
+  }
+
+  QueryBuilder<ChatMessage, int, QQueryOperations> tokenReasoningProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'tokenReasoning');
     });
   }
 

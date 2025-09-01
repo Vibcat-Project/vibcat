@@ -1,7 +1,7 @@
 import 'dart:math';
 
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:vibcat/bean/upload_file.dart';
@@ -23,8 +23,10 @@ import 'package:vibcat/util/app.dart';
 import 'package:vibcat/util/dialog.dart';
 import 'package:vibcat/util/file_picker.dart';
 import 'package:vibcat/util/haptic.dart';
+import 'package:vibcat/util/number.dart';
 import 'package:vibcat/widget/blur_bottom_sheet.dart';
 
+import '../../../widget/ripple_effect.dart';
 import 'state.dart';
 
 class HomeLogic extends GetxController with GetSingleTickerProviderStateMixin {
@@ -44,6 +46,7 @@ class HomeLogic extends GetxController with GetSingleTickerProviderStateMixin {
   // GlobalKey 用于获取最后一个消息 widget 的高度
   final lastUserMsgKey = GlobalKey();
   final lastAIMsgKey = GlobalKey();
+  final rippleKey = GlobalKey<RippleEffectState>();
 
   bool _currentReasoningScrollFinished = true;
   DateTime? _reasoningStartTime;
@@ -416,14 +419,17 @@ class HomeLogic extends GetxController with GetSingleTickerProviderStateMixin {
 
   /// 更新响应消息
   Future<void> _updateResponseMessage(
-    dynamic delta,
+    ChatMessage delta,
     ChatMessage responseMsg,
   ) async {
     final currentStatus = responseMsg.status;
 
     responseMsg
       ..status = ChatMessageStatus.streaming
-      ..content = (responseMsg.content ?? '') + (delta.content ?? '');
+      ..content = (responseMsg.content ?? '') + (delta.content ?? '')
+      ..tokenInput = delta.tokenInput
+      ..tokenOutput = delta.tokenOutput
+      ..tokenReasoning = delta.tokenReasoning;
 
     if (delta.reasoning != null) {
       // 思考中
@@ -530,9 +536,17 @@ class HomeLogic extends GetxController with GetSingleTickerProviderStateMixin {
 
     if (!state.isTemporaryChat.value) {
       await _repoDBApp.upsertChatMessage(responseMsg);
+      // 更新 Token 用量信息
+      await _repoDBApp.upsertAIModelConfig(
+        state.currentAIModelConfig.value!
+          ..tokenInput += responseMsg.tokenInput
+          ..tokenOutput += responseMsg.tokenOutput,
+      );
     }
 
     HapticUtil.success();
+    // rippleKey.currentState?.triggerRipple();
+
     _topicNaming();
   }
 
@@ -618,6 +632,13 @@ class HomeLogic extends GetxController with GetSingleTickerProviderStateMixin {
       state.currentConversation.value!..title = result!.content!,
     );
 
+    // 更新 Token 用量信息
+    await _repoDBApp.upsertAIModelConfig(
+      modelConfig
+        ..tokenInput += result.tokenInput
+        ..tokenOutput += result.tokenOutput,
+    );
+
     Get.find<DrawerLogic>().refreshList();
   }
 
@@ -647,5 +668,35 @@ class HomeLogic extends GetxController with GetSingleTickerProviderStateMixin {
     SharePlus.instance.share(ShareParams(text: msg.content?.trim()));
   }
 
-  void showAIMessageMore(ChatMessage msg) async {}
+  void showAIMessageMore(ChatMessage msg) async {
+    BlurBottomSheet.show(
+      'Token 用量',
+      Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ListTile(
+            title: Text('Prompt 输入'),
+            trailing: Text(
+              NumberUtil.formatNumber(msg.tokenInput),
+              style: TextStyle(fontSize: 14),
+            ),
+          ),
+          ListTile(
+            title: Text('AI 输出'),
+            trailing: Text(
+              NumberUtil.formatNumber(msg.tokenOutput),
+              style: TextStyle(fontSize: 14),
+            ),
+          ),
+          ListTile(
+            title: Text('AI 思考'),
+            trailing: Text(
+              NumberUtil.formatNumber(msg.tokenReasoning),
+              style: TextStyle(fontSize: 14),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }

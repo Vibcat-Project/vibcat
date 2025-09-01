@@ -51,7 +51,24 @@ class GeminiRequestService extends OpenAIRequestService {
           if (jsonStr == '[DONE]') break;
 
           final Map<String, dynamic> data = jsonDecode(jsonStr);
-          String? content = data['choices'][0]['delta']['content'];
+          final resultMsg = ChatMessage();
+
+          // 提取 Token Usage
+          final usage = data['usage'];
+          if (usage != null) {
+            resultMsg
+              ..tokenOutput = usage['completion_tokens'] ?? 0
+              ..tokenInput = usage['prompt_tokens'] ?? 0
+              ..tokenReasoning =
+                  usage['completion_tokens_details']?['reasoning_tokens'] ?? 0;
+            yield resultMsg;
+          }
+
+          if (data['choices']?.isEmpty ?? true) {
+            continue;
+          }
+
+          String? content = data['choices'][0]['delta']?['content'];
 
           if (content != null) {
             if (content.startsWith("<thought>")) {
@@ -64,9 +81,9 @@ class GeminiRequestService extends OpenAIRequestService {
             }
 
             if (thinkFinished) {
-              yield ChatMessage()..content = content;
+              yield resultMsg..content = content;
             } else {
-              yield ChatMessage()..reasoning = content;
+              yield resultMsg..reasoning = content;
             }
           }
         }

@@ -15,6 +15,7 @@ import 'package:vibcat/global/lottie.dart';
 import 'package:vibcat/global/markdown_config.dart';
 import 'package:vibcat/global/store.dart';
 import 'package:vibcat/widget/image_loader.dart';
+import 'package:vibcat/widget/ripple_effect.dart';
 
 import '../../../util/app.dart';
 import '../logic.dart';
@@ -571,25 +572,28 @@ class HomeComponent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColor.transparent,
-      appBar: _appBar(),
-      body: GestureDetector(
-        behavior: HitTestBehavior.translucent,
-        onTap: () => AppUtil.hideKeyboard(),
-        child: _body(),
-      ),
-      bottomNavigationBar: Container(
-        margin: EdgeInsets.fromLTRB(16, 0, 16, Get.mediaQuery.padding.bottom),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(20),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
-            child: Obx(() => _bottomBar()),
+    return RippleEffect(
+      key: logic.rippleKey,
+      child: Scaffold(
+        backgroundColor: AppColor.transparent,
+        appBar: _appBar(),
+        body: GestureDetector(
+          behavior: HitTestBehavior.translucent,
+          onTap: () => AppUtil.hideKeyboard(),
+          child: _body(),
+        ),
+        bottomNavigationBar: Container(
+          margin: EdgeInsets.fromLTRB(16, 0, 16, Get.mediaQuery.padding.bottom),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(20),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+              child: Obx(() => _bottomBar()),
+            ),
           ),
         ),
+        extendBody: true,
       ),
-      extendBody: true,
     );
   }
 }

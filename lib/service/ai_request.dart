@@ -47,6 +47,7 @@ abstract class AIRequestService {
 
     switch (config.provider) {
       case AIProviderType.openAI:
+      case AIProviderType.deepseek:
       case AIProviderType.siliconFlow:
       case AIProviderType.groq:
       case AIProviderType.openRouter:
@@ -56,8 +57,11 @@ abstract class AIRequestService {
         return GeminiRequestService();
       case AIProviderType.volcanoEngine:
         return VolcanoEngineRequestService();
-      default:
+      case AIProviderType.azureOpenAI:
+      case AIProviderType.claude:
         throw Exception('Unsupported AI provider: ${config.provider}');
+      // default:
+      //   throw Exception('Unsupported AI provider: ${config.provider}');
     }
   }
 

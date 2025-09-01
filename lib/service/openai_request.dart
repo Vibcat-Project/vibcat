@@ -5,6 +5,7 @@ import 'package:vibcat/data/bean/ai_model.dart';
 import 'package:vibcat/data/schema/chat_message.dart';
 import 'package:vibcat/data/schema/ai_model_config.dart';
 import 'package:vibcat/service/ai_request.dart';
+import 'package:vibcat/util/number.dart';
 
 import '../data/schema/conversation.dart';
 
@@ -61,22 +62,35 @@ class OpenAIRequestService extends AIRequestService {
 
       await for (final line in stream) {
         if (line.startsWith('data: ')) {
-          // print(line);
+          print(line);
 
           final jsonStr = line.substring(6).trim();
           if (jsonStr == '[DONE]') break;
 
           final Map<String, dynamic> data = jsonDecode(jsonStr);
-          if (data['choices'].isEmpty) {
+          final resultMsg = ChatMessage();
+
+          // 提取 Token Usage
+          final usage = data['usage'];
+          if (usage != null) {
+            resultMsg
+              ..tokenOutput = usage['completion_tokens'] ?? 0
+              ..tokenInput = usage['prompt_tokens'] ?? 0
+              ..tokenReasoning =
+                  usage['completion_tokens_details']?['reasoning_tokens'] ?? 0;
+            yield resultMsg;
+          }
+
+          if (data['choices']?.isEmpty ?? true) {
             continue;
           }
 
-          final content = data['choices'][0]['delta']['content'];
-          final reasoning = data['choices'][0]['delta']['reasoning_content'];
+          final content = data['choices'][0]['delta']?['content'];
+          final reasoning = data['choices'][0]['delta']?['reasoning_content'];
 
-          // 针对 SiliconFlow
+          // 针对 SiliconFlow, DeepSeek
           if (reasoning != null) {
-            yield ChatMessage()..reasoning = reasoning;
+            yield resultMsg..reasoning = reasoning;
             continue;
           }
 
@@ -91,9 +105,9 @@ class OpenAIRequestService extends AIRequestService {
             }
 
             if (thinkFinished) {
-              yield ChatMessage()..content = content;
+              yield resultMsg..content = content;
             } else {
-              yield ChatMessage()..reasoning = content;
+              yield resultMsg..reasoning = content;
             }
           }
         }
@@ -104,6 +118,7 @@ class OpenAIRequestService extends AIRequestService {
       }
       yield null;
     } catch (e) {
+      print(e);
       yield null;
     }
   }
@@ -129,12 +144,22 @@ class OpenAIRequestService extends AIRequestService {
         return null;
       }
 
-      if (res.data['choices'].isEmpty) {
-        return null;
+      final resultMsg = ChatMessage();
+
+      // 提取 Token Usage
+      final usage = res.data['usage'];
+      if (usage != null) {
+        resultMsg
+          ..tokenOutput = usage['completion_tokens'] ?? 0
+          ..tokenInput = usage['prompt_tokens'] ?? 0;
       }
 
-      final content = res.data['choices'][0]['message']['content'];
-      return ChatMessage()..content = content;
+      if (res.data['choices']?.isEmpty ?? true) {
+        return resultMsg;
+      }
+
+      final content = res.data['choices'][0]['message']?['content'];
+      return resultMsg..content = content;
     } on DioException catch (e) {
       return null;
     } catch (e) {

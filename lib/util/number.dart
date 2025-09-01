@@ -1,5 +1,6 @@
 class NumberUtil {
-  static String formatNumber(int number, {bool chinese = false}) {
+  static String formatNumber(int? number, {bool chinese = false}) {
+    if (number == null) return '';
     if (number < 10000) return number.toString();
 
     if (chinese) {
@@ -22,5 +23,11 @@ class NumberUtil {
         return "${value}b";
       }
     }
+  }
+
+  static int parseInt(String? text) {
+    if (text == null) return 0;
+
+    return int.tryParse(text) ?? 0;
   }
 }
