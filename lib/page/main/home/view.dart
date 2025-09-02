@@ -192,85 +192,104 @@ class HomeComponent extends StatelessWidget {
       children: [
         // 思考内容
         if (item.reasoning != null && item.reasoning!.isNotEmpty)
-          Container(
-            margin: EdgeInsets.only(top: 20),
-            decoration: BoxDecoration(
-              color: GlobalStore.themeExt.border,
-              borderRadius: BorderRadius.circular(15),
+          TweenAnimationBuilder<double>(
+            tween: Tween(
+              begin: item.status == ChatMessageStatus.reasoning ? 0.0 : 1,
+              end: 1.0,
             ),
-            child: Stack(
-              children: [
-                AnimatedSize(
-                  duration: Duration(milliseconds: 300),
-                  curve: Curves.easeInOut,
-                  child: item.status == ChatMessageStatus.reasoning
-                      ? ShaderMask(
-                          shaderCallback: (Rect bounds) {
-                            return LinearGradient(
-                              begin: Alignment.topCenter,
-                              end: Alignment.bottomCenter,
-                              colors: [
-                                // 顶部透明（渐变开始）
-                                Colors.transparent,
-                                // 中间完全可见
-                                Colors.black,
-                                // 底部透明（渐变结束）
-                                Colors.transparent,
-                              ],
-                              stops: [0, 0.5, 1], // 控制渐变区间
-                            ).createShader(bounds);
-                          },
-                          blendMode: BlendMode.dstIn,
-                          child: Padding(
-                            padding: EdgeInsets.all(10),
-                            child: ConstrainedBox(
-                              constraints: BoxConstraints(
-                                // 最大显示行数
-                                // maxHeight = fontSize * lineHeight * maxLines
-                                maxHeight: logic.reasoningTextHeight * 4,
-                              ),
-                              child: SingleChildScrollView(
-                                controller: isLastItem
-                                    ? logic.reasoningController
-                                    : null,
-                                physics: NeverScrollableScrollPhysics(),
-                                // reverse: true,
-                                child: SizedBox(
-                                  width: double.infinity,
-                                  child: Text(
-                                    item.reasoning!.trim(),
-                                    style: TextStyle(fontSize: 14, height: 1.4),
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOut,
+            builder: (context, value, child) {
+              return Transform.scale(
+                scale: value,
+                alignment: Alignment.topLeft,
+                child: child,
+              );
+            },
+            child: Container(
+              margin: EdgeInsets.only(top: 20),
+              decoration: BoxDecoration(
+                color: GlobalStore.themeExt.container3,
+                borderRadius: BorderRadius.circular(15),
+              ),
+              child: Stack(
+                children: [
+                  AnimatedSize(
+                    duration: Duration(milliseconds: 300),
+                    curve: Curves.easeInOut,
+                    child: item.status == ChatMessageStatus.reasoning
+                        ? ShaderMask(
+                            shaderCallback: (Rect bounds) {
+                              return LinearGradient(
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                                colors: [
+                                  // 顶部透明（渐变开始）
+                                  Colors.transparent,
+                                  // 中间完全可见
+                                  Colors.black,
+                                  // 底部透明（渐变结束）
+                                  Colors.transparent,
+                                ],
+                                stops: [0, 0.5, 1], // 控制渐变区间
+                              ).createShader(bounds);
+                            },
+                            blendMode: BlendMode.dstIn,
+                            child: Container(
+                              height: logic.reasoningTextHeight * 4,
+                              padding: EdgeInsets.all(10),
+                              child: ConstrainedBox(
+                                constraints: BoxConstraints(
+                                  // 最大显示行数
+                                  // maxHeight = fontSize * lineHeight * maxLines
+                                  maxHeight: logic.reasoningTextHeight * 4,
+                                ),
+                                child: SingleChildScrollView(
+                                  controller: isLastItem
+                                      ? logic.reasoningController
+                                      : null,
+                                  physics: NeverScrollableScrollPhysics(),
+                                  // reverse: true,
+                                  child: SizedBox(
+                                    width: double.infinity,
+                                    child: Text(
+                                      item.reasoning!.trim(),
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        height: 1.4,
+                                      ),
+                                    ),
                                   ),
                                 ),
                               ),
                             ),
+                          )
+                        : Padding(
+                            padding: EdgeInsets.all(10),
+                            child: Text(
+                              'reasoningTimeConsuming'.trParams({
+                                'time': item.reasoningTimeConsuming ?? '',
+                              }),
+                            ),
                           ),
-                        )
-                      : Padding(
-                          padding: EdgeInsets.all(10),
-                          child: Text(
-                            'reasoningTimeConsuming'.trParams({
-                              'time': item.reasoningTimeConsuming ?? '',
-                            }),
-                          ),
-                        ),
-                ),
+                  ),
 
-                // 顶部模糊层
-                // Positioned.fill(
-                //   child: ClipRRect(
-                //     borderRadius: BorderRadius.circular(15),
-                //     child: BackdropFilter(
-                //       filter: ImageFilter.blur(sigmaX: 2, sigmaY: 2),
-                //       child: Container(
-                //         decoration: BoxDecoration(
-                //           color: Colors.black.withOpacity(0.01),
-                //         ),
-                //       ),
-                //     ),
-                //   ),
-                // ),
-              ],
+                  // 顶部模糊层
+                  // Positioned.fill(
+                  //   child: ClipRRect(
+                  //     borderRadius: BorderRadius.circular(15),
+                  //     child: BackdropFilter(
+                  //       filter: ImageFilter.blur(sigmaX: 2, sigmaY: 2),
+                  //       child: Container(
+                  //         decoration: BoxDecoration(
+                  //           color: Colors.black.withOpacity(0.01),
+                  //         ),
+                  //       ),
+                  //     ),
+                  //   ),
+                  // ),
+                ],
+              ),
             ),
           ),
 

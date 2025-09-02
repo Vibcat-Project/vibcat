@@ -8,6 +8,7 @@ import '../data/schema/ai_model_config.dart';
 import '../data/schema/chat_message.dart';
 import '../data/schema/conversation.dart';
 import '../enum/ai_think_type.dart';
+import '../enum/chat_message_type.dart';
 
 class VolcanoEngineRequestService extends OpenAIRequestService {
   @override
@@ -100,17 +101,17 @@ class VolcanoEngineRequestService extends OpenAIRequestService {
           if (jsonStr == '[DONE]') break;
 
           final Map<String, dynamic> data = jsonDecode(jsonStr);
-          final resultMsg = ChatMessage();
+          final resultMsg = ChatMessage()..type = ChatMessageType.text;
 
           // 提取 Token Usage
           final usage = data['usage'];
           if (usage != null) {
-            resultMsg
+            yield ChatMessage()
+              ..type = ChatMessageType.usage
               ..tokenOutput = usage['completion_tokens'] ?? 0
               ..tokenInput = usage['prompt_tokens'] ?? 0
               ..tokenReasoning =
                   usage['completion_tokens_details']?['reasoning_tokens'] ?? 0;
-            yield resultMsg;
           }
 
           if (data['choices']?.isEmpty ?? true) {

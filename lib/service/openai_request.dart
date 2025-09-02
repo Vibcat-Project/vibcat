@@ -4,8 +4,8 @@ import 'package:dio/dio.dart';
 import 'package:vibcat/data/bean/ai_model.dart';
 import 'package:vibcat/data/schema/chat_message.dart';
 import 'package:vibcat/data/schema/ai_model_config.dart';
+import 'package:vibcat/enum/chat_message_type.dart';
 import 'package:vibcat/service/ai_request.dart';
-import 'package:vibcat/util/number.dart';
 
 import '../data/schema/conversation.dart';
 
@@ -68,17 +68,17 @@ class OpenAIRequestService extends AIRequestService {
           if (jsonStr == '[DONE]') break;
 
           final Map<String, dynamic> data = jsonDecode(jsonStr);
-          final resultMsg = ChatMessage();
+          final resultMsg = ChatMessage()..type = ChatMessageType.text;
 
           // 提取 Token Usage
           final usage = data['usage'];
           if (usage != null) {
-            resultMsg
+            yield ChatMessage()
+              ..type = ChatMessageType.usage
               ..tokenOutput = usage['completion_tokens'] ?? 0
               ..tokenInput = usage['prompt_tokens'] ?? 0
               ..tokenReasoning =
                   usage['completion_tokens_details']?['reasoning_tokens'] ?? 0;
-            yield resultMsg;
           }
 
           if (data['choices']?.isEmpty ?? true) {

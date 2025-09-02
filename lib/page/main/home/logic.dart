@@ -426,10 +426,15 @@ class HomeLogic extends GetxController with GetSingleTickerProviderStateMixin {
 
     responseMsg
       ..status = ChatMessageStatus.streaming
-      ..content = (responseMsg.content ?? '') + (delta.content ?? '')
-      ..tokenInput = delta.tokenInput
-      ..tokenOutput = delta.tokenOutput
-      ..tokenReasoning = delta.tokenReasoning;
+      ..content = (responseMsg.content ?? '') + (delta.content ?? '');
+
+    if (delta.type == ChatMessageType.usage) {
+      responseMsg
+        ..tokenInput = delta.tokenInput
+        ..tokenOutput = delta.tokenOutput
+        ..tokenReasoning = delta.tokenReasoning;
+      return;
+    }
 
     if (delta.reasoning != null) {
       // 思考中
