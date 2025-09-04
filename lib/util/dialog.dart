@@ -18,7 +18,7 @@ class DialogUtil {
       margin: EdgeInsets.symmetric(vertical: 10, horizontal: 30),
       borderRadius: 20,
       backgroundColor: GlobalStore.theme.colorScheme.primary,
-      colorText: AppColor.white,
+      colorText: GlobalStore.theme.scaffoldBackgroundColor,
       animationDuration: Duration(milliseconds: 500),
       overlayBlur: 8,
     );

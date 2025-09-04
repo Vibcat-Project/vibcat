@@ -21,7 +21,7 @@ class MarkdownConfigs {
           borderRadius: BorderRadius.circular(10),
         ),
         codeBlockTitleDecoration: BoxDecoration(
-          color: Color(0xFFE4E4E2),
+          color: GlobalStore.themeExt.codeBlock,
           borderRadius: BorderRadius.vertical(top: Radius.circular(10)),
         ),
         codeBlockTitleCopyText: 'copy'.tr,
@@ -29,7 +29,7 @@ class MarkdownConfigs {
       ),
       CodeConfig(
         decoration: BoxDecoration(
-          color: Color(0xFFE4E4E2),
+          color: GlobalStore.themeExt.codeBlock,
           borderRadius: BorderRadius.circular(6),
         ),
         padding: EdgeInsets.symmetric(horizontal: 6),

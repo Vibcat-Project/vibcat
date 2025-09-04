@@ -610,7 +610,7 @@ class ReasoningContainer extends StatelessWidget {
       },
       blendMode: BlendMode.dstIn,
       child: Container(
-        height: logic.reasoningTextHeight * 4,
+        height: logic.reasoningTextHeight * 4 + 20,
         padding: const EdgeInsets.all(10),
         child: ConstrainedBox(
           constraints: BoxConstraints(maxHeight: logic.reasoningTextHeight * 4),

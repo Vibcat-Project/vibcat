@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:vibcat/global/isar.dart';
+import 'package:vibcat/global/store.dart';
+import 'package:vibcat/theme.dart';
 
 import 'app.dart';
 
@@ -17,6 +19,14 @@ void main() async {
 }
 
 Future<void> init() async {
+  // 初始化主题
+  final brightness = WidgetsBinding.instance.window.platformBrightness;
+  if (brightness == Brightness.dark) {
+    GlobalStore.theme = ThemeStyle.defaultThemeDark();
+  } else {
+    GlobalStore.theme = ThemeStyle.defaultThemeLight();
+  }
+
   // 初始化 Isar 数据库
   await IsarInstance.init();
 }

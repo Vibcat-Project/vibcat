@@ -64,6 +64,7 @@ class ThemeStyle {
           container3: AppColor.container3,
           border: AppColor.border,
           divider: AppColor.divider,
+          codeBlock: AppColor.codeBlock,
           textHint: AppColor.textHint,
         ),
       ],
@@ -74,10 +75,46 @@ class ThemeStyle {
   static defaultThemeDark() {
     final dark = ThemeData.dark();
     return dark.copyWith(
-      primaryColor: AppColor.primary,
-      primaryColorDark: AppColor.primary,
-      scaffoldBackgroundColor: Colors.grey[900],
-      appBarTheme: dark.appBarTheme.copyWith(color: Colors.grey[900]),
+      colorScheme: dark.colorScheme.copyWith(
+        primary: AppColor.primaryDark,
+        secondary: AppColor.primaryDark,
+      ),
+      scaffoldBackgroundColor: AppColor.scaffoldDark,
+      appBarTheme: dark.appBarTheme.copyWith(
+        backgroundColor: AppColor.transparent,
+        systemOverlayStyle: SystemUiOverlayStyle(
+          statusBarBrightness: Brightness.dark,
+        ),
+        titleTextStyle: const TextStyle(
+          fontSize: 16,
+          color: AppColor.white,
+          fontWeight: FontWeight.bold,
+        ),
+        centerTitle: true,
+        scrolledUnderElevation: 0,
+      ),
+      iconTheme: dark.iconTheme.copyWith(color: AppColor.primaryDark),
+      iconButtonTheme: IconButtonThemeData(
+        style: IconButton.styleFrom(foregroundColor: AppColor.primaryDark),
+      ),
+      listTileTheme: dark.listTileTheme.copyWith(
+        iconColor: AppColor.primaryDark,
+      ),
+      checkboxTheme: dark.checkboxTheme.copyWith(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
+        visualDensity: VisualDensity.compact,
+      ),
+      extensions: [
+        const AppThemeExtension(
+          container: AppColor.containerDark,
+          container2: AppColor.container2Dark,
+          container3: AppColor.container3Dark,
+          border: AppColor.borderDark,
+          divider: AppColor.dividerDark,
+          codeBlock: AppColor.codeBlockDark,
+          textHint: AppColor.textHintDark,
+        ),
+      ],
     );
   }
 }
@@ -88,6 +125,7 @@ class AppThemeExtension extends ThemeExtension<AppThemeExtension> {
   final Color? container3;
   final Color? border;
   final Color? divider;
+  final Color? codeBlock;
   final Color? textHint;
 
   const AppThemeExtension({
@@ -96,6 +134,7 @@ class AppThemeExtension extends ThemeExtension<AppThemeExtension> {
     this.container3,
     this.border,
     this.divider,
+    this.codeBlock,
     this.textHint,
   });
 
@@ -106,6 +145,7 @@ class AppThemeExtension extends ThemeExtension<AppThemeExtension> {
     Color? container3,
     Color? border,
     Color? divider,
+    Color? codeBlock,
     Color? textHint,
   }) {
     return AppThemeExtension(
@@ -114,6 +154,7 @@ class AppThemeExtension extends ThemeExtension<AppThemeExtension> {
       container3: container3,
       border: border,
       divider: divider,
+      codeBlock: codeBlock,
       textHint: textHint,
     );
   }
@@ -127,6 +168,7 @@ class AppThemeExtension extends ThemeExtension<AppThemeExtension> {
       container3: Color.lerp(container3, other.container3, t),
       border: Color.lerp(border, other.border, t),
       divider: Color.lerp(divider, other.divider, t),
+      codeBlock: Color.lerp(codeBlock, other.codeBlock, t),
       textHint: Color.lerp(textHint, other.textHint, t),
     );
   }
