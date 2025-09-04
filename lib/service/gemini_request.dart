@@ -1,7 +1,6 @@
 import 'dart:convert';
 
 import 'package:dio/dio.dart';
-import 'package:vibcat/enum/ai_think_type.dart';
 import 'package:vibcat/service/openai_request.dart';
 
 import '../data/bean/ai_model.dart';
@@ -21,19 +20,12 @@ class GeminiRequestService extends OpenAIRequestService {
     try {
       final res = await dio.post(
         '${config.endPoint}/chat/completions',
-        data: {
-          'model': model.id,
-          'messages': await transformMessages(history),
-          'stream': true,
-          'stream_options': {'include_usage': true},
-          "extra_body": {
-            "google": {
-              "thinking_config": {
-                "include_thoughts": conversation.thinkType != AIThinkType.none,
-              },
-            },
-          },
-        },
+        data: await buildReqParams(
+          config: config,
+          model: model,
+          conversation: conversation,
+          history: history,
+        ),
         options: Options(
           headers: {'Authorization': 'Bearer ${config.apiKey}'},
           responseType: ResponseType.stream,

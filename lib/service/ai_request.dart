@@ -6,11 +6,13 @@ import 'package:vibcat/data/schema/chat_message.dart';
 import 'package:vibcat/data/schema/ai_model_config.dart';
 import 'package:vibcat/data/schema/conversation.dart';
 import 'package:vibcat/enum/ai_provider_type.dart';
+import 'package:vibcat/global/models.dart';
 import 'package:vibcat/service/gemini_request.dart';
 import 'package:vibcat/service/volcano_engine_request.dart';
 import 'package:vibcat/util/file.dart';
 
 import '../bean/upload_file.dart';
+import '../enum/ai_think_type.dart';
 import 'openai_request.dart';
 
 abstract class AIRequestService {
@@ -57,9 +59,9 @@ abstract class AIRequestService {
         return GeminiRequestService();
       case AIProviderType.volcanoEngine:
         return VolcanoEngineRequestService();
-      case AIProviderType.azureOpenAI:
-      case AIProviderType.claude:
-        throw Exception('Unsupported AI provider: ${config.provider}');
+      // case AIProviderType.azureOpenAI:
+      // case AIProviderType.claude:
+      //   throw Exception('Unsupported AI provider: ${config.provider}');
       // default:
       //   throw Exception('Unsupported AI provider: ${config.provider}');
     }
@@ -112,5 +114,104 @@ abstract class AIRequestService {
         .cast<List<int>>()
         .transform(utf8.decoder)
         .transform(const LineSplitter());
+  }
+
+  Future<Map<String, dynamic>> buildReqParams({
+    required AIModelConfig config,
+    required AIModel model,
+    required Conversation conversation,
+    required List<ChatMessage> history,
+  }) async {
+    final params = <String, dynamic>{
+      'model': model.id,
+      'messages': await transformMessages(history),
+      'stream': true,
+      'stream_options': {'include_usage': true},
+    };
+
+    var thinkingParams = <String, dynamic>{};
+
+    switch (config.provider) {
+      case AIProviderType.openAI:
+      case AIProviderType.deepseek:
+      case AIProviderType.openRouter:
+      case AIProviderType.ollama:
+        if (conversation.thinkType != AIThinkType.none &&
+            conversation.thinkType != AIThinkType.auto) {
+          thinkingParams = {'reasoning_effort': conversation.thinkType.name};
+        }
+      case AIProviderType.groq:
+        final gradient =
+            ModelsConfig.supportThinkingControl[config.provider]?[model.id];
+
+        if (gradient == null) {
+          // 代表该模型不支持思考
+          thinkingParams = {};
+        } else if (gradient == true) {
+          thinkingParams = {
+            'reasoning_effort':
+                conversation.thinkType == AIThinkType.none ||
+                    conversation.thinkType == AIThinkType.auto
+                ? 'medium'
+                : conversation.thinkType.name,
+          };
+        } else {
+          thinkingParams = {
+            'reasoning_effort': conversation.thinkType == AIThinkType.none
+                ? 'none'
+                : 'default',
+          };
+        }
+      case AIProviderType.siliconFlow:
+        final gradient =
+            ModelsConfig.supportThinkingControl[config.provider]?[model.id];
+
+        if (gradient == null) {
+          // 代表该模型不支持控制思考强度，且对于支持思考的模型，不能传入控制思考强度的参数
+          thinkingParams = {};
+        } else {
+          var thinkingBudget = 4096;
+          switch (conversation.thinkType) {
+            case AIThinkType.low:
+              thinkingBudget = 128;
+              break;
+            case AIThinkType.medium:
+              thinkingBudget = 16320;
+              break;
+            case AIThinkType.high:
+              thinkingBudget = 32768;
+              break;
+            default:
+              thinkingBudget = 4096;
+          }
+
+          thinkingParams = {
+            'enable_thinking': conversation.thinkType != AIThinkType.none,
+            'thinking_budget': thinkingBudget,
+          };
+        }
+      case AIProviderType.gemini:
+        thinkingParams = {
+          "extra_body": {
+            "google": {
+              "thinking_config": {
+                "include_thoughts": conversation.thinkType != AIThinkType.none,
+              },
+            },
+          },
+        };
+      case AIProviderType.volcanoEngine:
+        final thinkingType = conversation.thinkType == AIThinkType.none
+            ? 'disabled'
+            : (conversation.thinkType == AIThinkType.auto ? 'auto' : 'enabled');
+
+        thinkingParams = {
+          "extra_body": {
+            "thinking": {"type": thinkingType},
+          },
+        };
+    }
+
+    return params..addAll(thinkingParams);
   }
 }

@@ -10,17 +10,17 @@ enum AIProviderType {
     customEndPoint: true,
     compatibleOpenAI: true,
   ),
-  azureOpenAI(
-    plainName: 'Azure OpenAI',
-    endPoint: '',
-    icon: AppImage.providerAzureOpenAI,
-    customEndPoint: true,
-  ),
-  claude(
-    plainName: 'Claude',
-    endPoint: 'https://api.anthropic.com',
-    icon: AppImage.providerClaude,
-  ),
+  // azureOpenAI(
+  //   plainName: 'Azure OpenAI',
+  //   endPoint: '',
+  //   icon: AppImage.providerAzureOpenAI,
+  //   customEndPoint: true,
+  // ),
+  // claude(
+  //   plainName: 'Claude',
+  //   endPoint: 'https://api.anthropic.com',
+  //   icon: AppImage.providerClaude,
+  // ),
   gemini(
     plainName: 'Gemini',
     endPoint: 'https://generativelanguage.googleapis.com/v1beta/openai',

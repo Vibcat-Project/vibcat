@@ -178,8 +178,6 @@ P _aIModelConfigDeserializeProp<P>(
 
 const _AIModelConfigproviderEnumValueMap = {
   r'openAI': r'openAI',
-  r'azureOpenAI': r'azureOpenAI',
-  r'claude': r'claude',
   r'gemini': r'gemini',
   r'deepseek': r'deepseek',
   r'siliconFlow': r'siliconFlow',
@@ -190,8 +188,6 @@ const _AIModelConfigproviderEnumValueMap = {
 };
 const _AIModelConfigproviderValueEnumMap = {
   r'openAI': AIProviderType.openAI,
-  r'azureOpenAI': AIProviderType.azureOpenAI,
-  r'claude': AIProviderType.claude,
   r'gemini': AIProviderType.gemini,
   r'deepseek': AIProviderType.deepseek,
   r'siliconFlow': AIProviderType.siliconFlow,

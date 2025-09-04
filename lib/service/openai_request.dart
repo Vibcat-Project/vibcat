@@ -43,13 +43,12 @@ class OpenAIRequestService extends AIRequestService {
     try {
       final res = await dio.post(
         '${config.endPoint}/chat/completions',
-        data: {
-          'model': model.id,
-          'messages': await transformMessages(history),
-          'stream': true,
-          'stream_options': {'include_usage': true},
-          // 'reasoning_effort': conversation.thinkType.name,
-        },
+        data: await buildReqParams(
+          config: config,
+          model: model,
+          conversation: conversation,
+          history: history,
+        ),
         options: Options(
           headers: {'Authorization': 'Bearer ${config.apiKey}'},
           responseType: ResponseType.stream,

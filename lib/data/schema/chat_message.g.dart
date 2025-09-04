@@ -291,6 +291,7 @@ const _ChatMessagetypeEnumValueMap = {
   r'image': r'image',
   r'audio': r'audio',
   r'file': r'file',
+  r'usage': r'usage',
   r'custom': r'custom',
 };
 const _ChatMessagetypeValueEnumMap = {
@@ -298,6 +299,7 @@ const _ChatMessagetypeValueEnumMap = {
   r'image': ChatMessageType.image,
   r'audio': ChatMessageType.audio,
   r'file': ChatMessageType.file,
+  r'usage': ChatMessageType.usage,
   r'custom': ChatMessageType.custom,
 };
 
