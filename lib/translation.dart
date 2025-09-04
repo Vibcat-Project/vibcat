@@ -44,8 +44,11 @@ class Translation extends Translations {
       'reasoningTimeConsuming': '😇 已思考完毕（耗时：@time）',
       'addImage': '添加图片',
       'addFile': '添加文件',
+      'addLink': '添加链接',
       'dataLoadFail': '不好，数据获取失败辣！！ 🥺',
       'contentHasCopied': '内容已复制 😎',
+      'inputContent': '输入内容',
+      'inputLink': '输入链接',
     },
     'en_US': {'appName': 'Vibcat', 'appSlogan': ''},
   };

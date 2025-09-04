@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:markdown_widget/markdown_widget.dart';
 import 'package:vibcat/bean/upload_file.dart';
+import 'package:vibcat/enum/add_options_type.dart';
 import 'package:vibcat/enum/ai_think_type.dart';
 import 'package:vibcat/enum/chat_message_status.dart';
 import 'package:vibcat/enum/chat_role.dart';
@@ -301,10 +302,9 @@ class HomeComponent extends StatelessWidget {
       shadowColor: AppColor.black.withOpacity(0.5),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       clipBehavior: Clip.hardEdge,
-      itemBuilder: (_) => [
-        PopupMenuItem(value: 'image', child: Text('addImage'.tr)),
-        PopupMenuItem(value: 'file', child: Text('addFile'.tr)),
-      ],
+      itemBuilder: (_) => AddOptionsType.values
+          .map((e) => PopupMenuItem(value: e, child: Text(e.plainName.tr)))
+          .toList(),
       onSelected: logic.addFile,
       child: RoundButton(icon: Icon(AppIcon.add)),
     );

@@ -12,6 +12,7 @@ import 'package:vibcat/data/repository/database/app_db.dart';
 import 'package:vibcat/data/repository/net/ai.dart';
 import 'package:vibcat/data/schema/chat_message.dart';
 import 'package:vibcat/data/schema/conversation.dart';
+import 'package:vibcat/enum/add_options_type.dart';
 import 'package:vibcat/enum/ai_think_type.dart';
 import 'package:vibcat/enum/chat_message_status.dart';
 import 'package:vibcat/enum/chat_message_type.dart';
@@ -24,6 +25,7 @@ import 'package:vibcat/util/dialog.dart';
 import 'package:vibcat/util/file_picker.dart';
 import 'package:vibcat/util/haptic.dart';
 import 'package:vibcat/util/number.dart';
+import 'package:vibcat/util/web_content_extractor.dart';
 import 'package:vibcat/widget/blur_bottom_sheet.dart';
 
 import '../../../widget/ripple_effect.dart';
@@ -541,13 +543,14 @@ class HomeLogic extends GetxController with GetSingleTickerProviderStateMixin {
 
     if (!state.isTemporaryChat.value) {
       await _repoDBApp.upsertChatMessage(responseMsg);
-      // 更新 Token 用量信息
-      await _repoDBApp.upsertAIModelConfig(
-        state.currentAIModelConfig.value!
-          ..tokenInput += responseMsg.tokenInput
-          ..tokenOutput += responseMsg.tokenOutput,
-      );
     }
+
+    // 更新 Token 用量信息
+    await _repoDBApp.upsertAIModelConfig(
+      state.currentAIModelConfig.value!
+        ..tokenInput += responseMsg.tokenInput
+        ..tokenOutput += responseMsg.tokenOutput,
+    );
 
     HapticUtil.success();
     // rippleKey.currentState?.triggerRipple();
@@ -647,18 +650,27 @@ class HomeLogic extends GetxController with GetSingleTickerProviderStateMixin {
     Get.find<DrawerLogic>().refreshList();
   }
 
-  void addFile(String type) async {
+  void addFile(AddOptionsType type) async {
     switch (type) {
-      case 'image':
+      case AddOptionsType.image:
         final image = await FilePickerUtil.pickImage();
         if (image != null) {
           state.selectedFiles.add(UploadImage(image));
         }
         break;
-      case 'file':
+      case AddOptionsType.file:
         final file = await FilePickerUtil.pickFile();
         if (file != null) {
           state.selectedFiles.add(UploadFile(file));
+        }
+        break;
+      case AddOptionsType.link:
+        final result = await DialogUtil.showInputDialog(title: 'inputLink'.tr);
+        if (result == null || result.trim().isEmpty) return;
+
+        final article = await WebContentExtractor.extractContent(result);
+        if (article != null) {
+          state.selectedFiles.add(UploadText(article, name: result));
         }
         break;
     }

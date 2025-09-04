@@ -67,45 +67,51 @@ abstract class AIRequestService {
     }
   }
 
-  Future<List> transformMessages(List<ChatMessage> messages) async =>
-      await Future.wait(
-        messages.map((item) async {
-          if (item.files.isNotEmpty) {
-            final contents = [
-              {'type': 'text', 'text': item.content},
-              ...await Future.wait(
-                item.files.map((e) async {
-                  if (e is UploadImage) {
-                    return {
-                      'type': 'image_url',
-                      'image_url': {
-                        'url': await FileUtil.fileToBase64DataUri(
-                          e.file,
-                          mimeType: e.mimeType,
-                        ),
-                      },
-                    };
-                  } else {
-                    return {
-                      'type': 'file',
-                      'file': {
-                        'file_data': await FileUtil.fileToBase64DataUri(
-                          e.file,
-                          mimeType: e.mimeType,
-                        ),
-                      },
-                    };
-                  }
-                }),
-              ),
-            ];
+  Future<List> transformMessages(
+    List<ChatMessage> messages,
+  ) async => await Future.wait(
+    messages.map((item) async {
+      if (item.files.isNotEmpty) {
+        final contents = [
+          {'type': 'text', 'text': item.content},
+          ...await Future.wait(
+            item.files.map((e) async {
+              if (e is UploadImage) {
+                return {
+                  'type': 'image_url',
+                  'image_url': {
+                    'url': await FileUtil.fileToBase64DataUri(
+                      e.file,
+                      mimeType: e.mimeType,
+                    ),
+                  },
+                };
+              } else if (e is UploadFile) {
+                return {
+                  // 'type': 'file',
+                  // 'file': {
+                  //   'file_data': await FileUtil.fileToBase64DataUri(
+                  //     e.file,
+                  //     mimeType: e.mimeType,
+                  //   ),
+                  // },
+                  'type': 'text',
+                  'text':
+                      '${e.name}\n${await FileUtil.readFileAsString(e.file.path)}',
+                };
+              } else {
+                return {'type': 'text', 'text': '${e.name}\n${e.file.path}'};
+              }
+            }),
+          ),
+        ];
 
-            return {'role': item.role.name, 'content': contents};
-          } else {
-            return {'role': item.role.name, 'content': item.content};
-          }
-        }),
-      );
+        return {'role': item.role.name, 'content': contents};
+      } else {
+        return {'role': item.role.name, 'content': item.content};
+      }
+    }),
+  );
 
   dynamic transformStream(Response<dynamic> response) {
     return response.data.stream

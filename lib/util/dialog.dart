@@ -101,4 +101,42 @@ class DialogUtil {
       ),
     );
   }
+
+  static Future<String?> showInputDialog({String? title}) async {
+    final teController = TextEditingController();
+    return await BlurBottomSheet.show(
+      title ?? 'inputContent'.tr,
+      Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            margin: EdgeInsets.symmetric(horizontal: 16),
+            padding: EdgeInsets.symmetric(vertical: 10),
+            decoration: BoxDecoration(
+              border: Border.all(color: GlobalStore.themeExt.divider!),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: TextField(
+              decoration: InputDecoration(
+                border: InputBorder.none,
+                contentPadding: EdgeInsets.symmetric(horizontal: 10),
+                isDense: true,
+              ),
+              style: TextStyle(fontSize: 14),
+              controller: teController,
+            ),
+          ),
+          SizedBox(height: 20),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton(
+              onPressed: () => AppRoute.back(result: teController.text.trim()),
+              child: Text('ok'.tr),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }

@@ -31,7 +31,7 @@ class UploadImage extends UploadFileWrap {
   /// 直接传 File
   UploadImage(this.file, {String? name, String? mimeType})
     : name = name ?? file.uri.pathSegments.last,
-      mimeType = FileUtil.getMimeTypeSync(file);
+      mimeType = mimeType ?? FileUtil.getMimeTypeSync(file);
 
   /// 传 path
   UploadImage.fromPath(String path, {String? name, String? mimeType})
@@ -71,7 +71,7 @@ class UploadFile extends UploadFileWrap {
 
   UploadFile(this.file, {String? name, String? mimeType})
     : name = name ?? file.uri.pathSegments.last,
-      mimeType = FileUtil.getMimeTypeSync(file);
+      mimeType = mimeType ?? FileUtil.getMimeTypeSync(file);
 
   UploadFile.fromPath(String path, {String? name, String? mimeType})
     : file = File(path),
@@ -92,6 +92,48 @@ class UploadFile extends UploadFileWrap {
   UploadFile deepCopy() {
     return UploadFile(
       File(file.path), // 新建一个 File 实例（路径相同）
+      name: name,
+      mimeType: mimeType,
+    );
+  }
+}
+
+class UploadText extends UploadFileWrap {
+  @override
+  final File file;
+
+  @override
+  final String name;
+
+  @override
+  final String mimeType;
+
+  static const _defaultMimeType = 'text/plain';
+
+  UploadText(String text, {String? name, String? mimeType})
+    : file = File(text),
+      name = name ?? '',
+      mimeType = mimeType ?? _defaultMimeType;
+
+  UploadText.fromPath(String text, {String? name, String? mimeType})
+    : file = File(text),
+      name = name ?? '',
+      mimeType = mimeType ?? _defaultMimeType;
+
+  @override
+  UploadText copyWith({File? file, String? name, String? mimeType}) {
+    final newFile = file ?? this.file;
+    return UploadText(
+      newFile.path,
+      name: name ?? this.name,
+      mimeType: mimeType ?? this.mimeType,
+    );
+  }
+
+  @override
+  UploadText deepCopy() {
+    return UploadText(
+      file.path, // 新建一个 File 实例（路径相同）
       name: name,
       mimeType: mimeType,
     );

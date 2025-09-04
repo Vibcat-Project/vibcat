@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:mime/mime.dart';
+import 'package:flutter/services.dart' show rootBundle;
 
 class FileUtil {
   /// File 转 Base64
@@ -72,5 +73,15 @@ class FileUtil {
     } catch (e) {
       return 'application/octet-stream';
     }
+  }
+
+  static Future<String> readFileAsString(String path) async {
+    final file = File(path);
+    // 读取整个文件内容
+    return await file.readAsString();
+  }
+
+  static Future<String> loadAssetFile(String assetPath) async {
+    return await rootBundle.loadString(assetPath);
   }
 }
