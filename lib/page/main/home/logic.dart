@@ -227,32 +227,42 @@ class HomeLogic extends GetxController with GetSingleTickerProviderStateMixin {
   /// 主要的聊天函数
   Future<void> chat([bool retry = false]) async {
     if (state.isResponding.value) return;
+    if (!await _validateChatConditions()) return;
 
-    String prompt;
+    ChatMessage userMsg;
     if (retry) {
       // 重试时，获取最后一个用户消息
-      prompt = _getLastUserMessage();
-      if (prompt.isEmpty) return;
+      final lastUserMsg = _getLastUserMessage();
+      if (lastUserMsg == null) return;
+
+      userMsg = lastUserMsg;
+
+      // 更新对话
+      await _prepareConversation('');
 
       // 移除最后的失败消息（如果存在）
       await _removeFailedMessage();
     } else {
       // 正常发送时，从输入框获取内容
-      prompt = tePromptController.text.trim();
+      final prompt = tePromptController.text.trim();
       if (prompt.isEmpty) return;
+
+      // 准备或创建对话
+      final conv = await _prepareConversation(prompt);
+
+      userMsg = await _addUserMessage(conv, prompt);
+      tePromptController.clear();
     }
 
-    if (!await _validateChatConditions()) return;
-
-    await _performChat(prompt, retry);
+    await _performChat(userMsg, retry);
   }
 
   /// 获取最后一个用户消息
-  String _getLastUserMessage() {
+  ChatMessage? _getLastUserMessage() {
     final userMessages = state.chatMessage
         .where((msg) => msg.role == ChatRole.user)
         .toList();
-    return userMessages.isNotEmpty ? userMessages.last.content ?? '' : '';
+    return userMessages.lastOrNull;
   }
 
   /// 移除失败的消息
@@ -277,26 +287,34 @@ class HomeLogic extends GetxController with GetSingleTickerProviderStateMixin {
   }
 
   /// 执行聊天
-  Future<void> _performChat(String prompt, bool retry) async {
+  Future<void> _performChat(ChatMessage userMsg, bool retry) async {
     AppUtil.hideKeyboard();
     state.isResponding.value = true;
 
     try {
-      // 准备或创建对话
-      final conv = await _prepareConversation(prompt);
+      // 添加响应消息占位
+      final responseMsg = _createResponseMessage(
+        state.currentConversation.value!,
+      );
+      state.chatMessage.add(responseMsg);
 
-      // 添加用户消息（非重试时）
       if (!retry) {
-        final userMsg = await _addUserMessage(conv, prompt);
-        tePromptController.clear();
-
         // 在线搜索
-        for (final item in userMsg.files.whereType<UploadLink>()) {
+        final links = userMsg.files.whereType<UploadLink>();
+        if (links.isNotEmpty) {
+          responseMsg.status = ChatMessageStatus.searching;
+        }
+
+        for (final item in links) {
+          responseMsg.statusText.add(MapEntry('visitingWebsite'.tr, item.name));
+          state.chatMessage.refresh();
+          _adjustPaddingAndScroll();
+          scrollReasoningToBottom(true);
+
           final result = await _repoWebSearch.request(
             HeadlessBrowserWebSearchArgs(url: item.name),
           );
-          item.file = File(result ?? ' ');
-          state.chatMessage.refresh();
+          item.file = File(result ?? '');
         }
 
         if (!state.isTemporaryChat.value) {
@@ -305,7 +323,7 @@ class HomeLogic extends GetxController with GetSingleTickerProviderStateMixin {
       }
 
       // 发送请求并处理响应
-      await _handleChatResponse(conv);
+      await _handleChatResponse(responseMsg);
     } catch (e) {
       // 处理异常。这里目前不会走，因为 try 块中的代码不会抛异常
       _handleChatError();
@@ -381,19 +399,18 @@ class HomeLogic extends GetxController with GetSingleTickerProviderStateMixin {
   }
 
   /// 处理聊天响应
-  Future<void> _handleChatResponse(Conversation conv) async {
+  Future<void> _handleChatResponse(ChatMessage responseMsg) async {
     // 获取AI响应流
     final stream = _repoNetAI.chatCompletions(
       config: state.currentAIModelConfig.value!,
       model: state.currentAIModel.value!,
-      conversation: conv,
-      history: List.of(state.chatMessage),
+      conversation: state.currentConversation.value!,
+      history: List.of(state.chatMessage)..remove(responseMsg),
     );
 
     // 创建响应消息
-    final responseMsg = _createResponseMessage(conv);
-    state.chatMessage.add(responseMsg);
-    // await _adjustPaddingAndScroll(isStreaming: true);
+    // final responseMsg = _createResponseMessage(conv);
+    // state.chatMessage.add(responseMsg);
 
     // 处理流式响应
     await _processResponseStream(stream, responseMsg);
@@ -583,7 +600,7 @@ class HomeLogic extends GetxController with GetSingleTickerProviderStateMixin {
   }
 
   /// 滚动思考内容到底部
-  void scrollReasoningToBottom() {
+  void scrollReasoningToBottom([bool force = false]) {
     if (!reasoningController.hasClients) return;
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -592,8 +609,8 @@ class HomeLogic extends GetxController with GetSingleTickerProviderStateMixin {
       final position = reasoningController.position;
       final remainToBottom = position.extentAfter;
 
-      if (_shouldAnimateScroll(remainToBottom)) {
-        _animateReasoningScroll(position);
+      if (force || _shouldAnimateScroll(remainToBottom)) {
+        _animateReasoningScroll(position, force);
       }
     });
   }
@@ -610,14 +627,14 @@ class HomeLogic extends GetxController with GetSingleTickerProviderStateMixin {
   }
 
   /// 执行动画滚动
-  void _animateReasoningScroll(ScrollPosition position) {
+  void _animateReasoningScroll(ScrollPosition position, [bool force = false]) {
     if (!_currentReasoningScrollFinished) return;
 
     _currentReasoningScrollFinished = false;
 
     reasoningController
         .animateTo(
-          position.maxScrollExtent - reasoningTextHeight,
+          position.maxScrollExtent - (force ? 0 : reasoningTextHeight),
           duration: Duration(milliseconds: 300),
           curve: Curves.easeOut,
         )

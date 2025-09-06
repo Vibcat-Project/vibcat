@@ -49,6 +49,7 @@ class Translation extends Translations {
       'contentHasCopied': '内容已复制 😎',
       'inputContent': '输入内容',
       'inputLink': '输入链接',
+      'visitingWebsite': '正在访问链接',
     },
     'en_US': {'appName': 'Vibcat', 'appSlogan': ''},
   };

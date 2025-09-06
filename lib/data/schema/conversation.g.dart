@@ -116,7 +116,7 @@ Conversation _conversationDeserialize(
   object.modelId = reader.readString(offsets[2]);
   object.thinkType =
       _ConversationthinkTypeValueEnumMap[reader.readStringOrNull(offsets[3])] ??
-          AIThinkType.none;
+          AIThinkType.auto;
   object.title = reader.readString(offsets[4]);
   object.updatedAt = reader.readDateTime(offsets[5]);
   return object;
@@ -138,7 +138,7 @@ P _conversationDeserializeProp<P>(
     case 3:
       return (_ConversationthinkTypeValueEnumMap[
               reader.readStringOrNull(offset)] ??
-          AIThinkType.none) as P;
+          AIThinkType.auto) as P;
     case 4:
       return (reader.readString(offset)) as P;
     case 5:
@@ -149,15 +149,15 @@ P _conversationDeserializeProp<P>(
 }
 
 const _ConversationthinkTypeEnumValueMap = {
-  r'none': r'none',
   r'auto': r'auto',
+  r'none': r'none',
   r'low': r'low',
   r'medium': r'medium',
   r'high': r'high',
 };
 const _ConversationthinkTypeValueEnumMap = {
-  r'none': AIThinkType.none,
   r'auto': AIThinkType.auto,
+  r'none': AIThinkType.none,
   r'low': AIThinkType.low,
   r'medium': AIThinkType.medium,
   r'high': AIThinkType.high,

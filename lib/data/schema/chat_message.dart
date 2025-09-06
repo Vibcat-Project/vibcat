@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/widgets.dart';
 import 'package:isar/isar.dart';
 import 'package:vibcat/bean/upload_file.dart';
@@ -31,6 +33,9 @@ class ChatMessage extends BaseSchema {
   @Enumerated(EnumType.name)
   ChatMessageStatus? status;
 
+  @ignore
+  List<MapEntry<String, String>> statusText = [];
+
   // 思考耗时
   String? reasoningTimeConsuming;
 
@@ -50,7 +55,20 @@ class ChatMessage extends BaseSchema {
   void prepareForSave() {
     metadataJson = metadata == null ? null : JsonUtil.mapToJson(metadata!);
 
-    filePaths = files.map((e) => e.file.path).toList();
+    try {
+      filePaths = files
+          .map(
+            (e) => jsonEncode({
+              'path': e.file.path,
+              'name': e.name,
+              'mimeType': e.mimeType,
+              'type': e.runtimeType.toString(),
+            }),
+          )
+          .toList();
+    } catch (e) {
+      // Do nothing
+    }
   }
 
   /// 加载后：把 JSON 转回 Map
@@ -59,6 +77,31 @@ class ChatMessage extends BaseSchema {
       metadata = JsonUtil.mapFromJson(metadataJson!);
     }
 
-    // TODO: filePaths 要转回
+    try {
+      for (final value in filePaths) {
+        final item = jsonDecode(value);
+        final path = item['path'];
+        final name = item['name'];
+        final mimeType = item['mimeType'];
+
+        switch (item['type']) {
+          case 'UploadImage':
+            files.add(
+              UploadImage.fromPath(path, name: name, mimeType: mimeType),
+            );
+            break;
+          case 'UploadFile':
+            files.add(
+              UploadFile.fromPath(path, name: name, mimeType: mimeType),
+            );
+            break;
+          case 'UploadLink':
+            files.add(UploadLink(path, name: name, mimeType: mimeType));
+            break;
+        }
+      }
+    } catch (e) {
+      // Do nothing
+    }
   }
 }

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:markdown_widget/markdown_widget.dart';
 import 'package:vibcat/bean/upload_file.dart';
+import 'package:vibcat/data/schema/chat_message.dart';
 import 'package:vibcat/enum/add_options_type.dart';
 import 'package:vibcat/enum/ai_think_type.dart';
 import 'package:vibcat/enum/chat_message_status.dart';
@@ -312,7 +313,7 @@ class HomeComponent extends StatelessWidget {
 
   Widget _buildThinkTypeButton() {
     final thinkType = state.thinkType.value;
-    final isNoneType = thinkType == AIThinkType.none;
+    final isAutoType = thinkType == AIThinkType.auto;
 
     return PopupMenuButton(
       color: GlobalStore.themeExt.container,
@@ -322,8 +323,8 @@ class HomeComponent extends StatelessWidget {
       clipBehavior: Clip.hardEdge,
       child: RoundButton(
         icon: Icon(AppIcon.light),
-        text: isNoneType ? 'think'.tr : thinkType.plainName.tr,
-        color: isNoneType ? null : GlobalStore.themeExt.border,
+        text: isAutoType ? 'think'.tr : thinkType.plainName.tr,
+        color: isAutoType ? null : GlobalStore.themeExt.border,
       ),
       itemBuilder: (_) =>
           AIThinkType.values.map(_buildThinkTypeMenuItem).toList(),
@@ -364,7 +365,7 @@ class HomeComponent extends StatelessWidget {
 // ==================== 独立的消息组件 ====================
 
 class UserMessageWidget extends StatelessWidget {
-  final dynamic message;
+  final ChatMessage message;
   final int index;
   final bool isLastUserMessage;
   final GlobalKey? lastUserMsgKey;
@@ -386,14 +387,9 @@ class UserMessageWidget extends StatelessWidget {
       children: [
         if (message.files.isNotEmpty) _buildAttachedFiles(),
         _buildMessageBubble(),
-        if (_linkList.isNotEmpty) _buildWebSearchPanel(),
       ],
     );
   }
-
-  List<UploadFileWrap> get _linkList => message.files
-      .where((e) => e is UploadLink && e.file.path.isEmpty)
-      .toList();
 
   Widget _buildAttachedFiles() {
     return FileContainer(files: message.files, height: 70, shrinkWrap: true);
@@ -425,35 +421,10 @@ class UserMessageWidget extends StatelessWidget {
       ],
     );
   }
-
-  Widget _buildWebSearchPanel() {
-    return TweenAnimationBuilder<double>(
-      tween: Tween(begin: 0, end: 1.0),
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeOut,
-      builder: (context, value, child) {
-        return Transform.scale(
-          scale: value,
-          alignment: Alignment.topLeft,
-          child: child,
-        );
-      },
-      child: Container(
-        width: double.infinity,
-        margin: const EdgeInsets.only(top: 20),
-        padding: EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: GlobalStore.themeExt.container3,
-          borderRadius: BorderRadius.circular(15),
-        ),
-        child: Text('正在访问链接: ${_linkList.first.name}', maxLines: 1),
-      ),
-    );
-  }
 }
 
 class AssistantMessageWidget extends StatelessWidget {
-  final dynamic message;
+  final ChatMessage message;
   final int index;
   final bool isLastMessage;
   final GlobalKey? lastAIMsgKey;
@@ -483,14 +454,21 @@ class AssistantMessageWidget extends StatelessWidget {
   }
 
   bool _hasReasoning() =>
-      message.reasoning != null && message.reasoning!.isNotEmpty;
+      message.status == ChatMessageStatus.searching ||
+      // 这个判断如果不加的话，下面的 TweenAnimationBuilder 会重复执行，因为上面的 build 会在状态切换的时候重新生成 _buildReasoningSection()，Widget 缓存信息会丢失
+      message.status == ChatMessageStatus.reasoning ||
+      (message.reasoning != null && message.reasoning!.isNotEmpty);
 
   bool _showActions() => message.status == ChatMessageStatus.success;
 
   Widget _buildReasoningSection() {
     return TweenAnimationBuilder<double>(
       tween: Tween(
-        begin: message.status == ChatMessageStatus.reasoning ? 0.0 : 1,
+        begin:
+            message.status == ChatMessageStatus.reasoning ||
+                message.status == ChatMessageStatus.searching
+            ? 0.0
+            : 1,
         end: 1.0,
       ),
       duration: const Duration(milliseconds: 300),
@@ -593,7 +571,7 @@ class AssistantMessageWidget extends StatelessWidget {
 // ==================== 推理内容组件 ====================
 
 class ReasoningContainer extends StatelessWidget {
-  final dynamic message;
+  final ChatMessage message;
   final bool isLastMessage;
   final HomeLogic logic;
 
@@ -621,7 +599,9 @@ class ReasoningContainer extends StatelessWidget {
   }
 
   Widget _buildReasoningContent() {
-    final isReasoning = message.status == ChatMessageStatus.reasoning;
+    final isReasoning =
+        message.status == ChatMessageStatus.reasoning ||
+        message.status == ChatMessageStatus.searching;
 
     return isReasoning
         ? _buildReasoningInProgress()
@@ -639,22 +619,49 @@ class ReasoningContainer extends StatelessWidget {
         ).createShader(bounds);
       },
       blendMode: BlendMode.dstIn,
-      child: Container(
-        height: logic.reasoningTextHeight * 4 + 20,
-        padding: const EdgeInsets.all(10),
-        child: ConstrainedBox(
-          constraints: BoxConstraints(maxHeight: logic.reasoningTextHeight * 4),
-          child: SingleChildScrollView(
-            controller: isLastMessage ? logic.reasoningController : null,
-            physics: const NeverScrollableScrollPhysics(),
-            child: SizedBox(
-              width: double.infinity,
-              child: Text(
-                message.reasoning!.trim(),
-                style: const TextStyle(fontSize: 14, height: 1.4),
+      child: SizedBox(
+        height: logic.reasoningTextHeight * 4,
+        child: ListView(
+          padding: EdgeInsets.zero,
+          controller: isLastMessage ? logic.reasoningController : null,
+          physics: const NeverScrollableScrollPhysics(),
+          children: [
+            // 在线搜索进度
+            ...message.statusText.map(
+              (e) => SizedBox(
+                height: logic.reasoningTextHeight * 4,
+                child: Container(
+                  margin: EdgeInsets.symmetric(horizontal: 10, vertical: 20),
+                  padding: EdgeInsets.symmetric(horizontal: 10),
+                  decoration: BoxDecoration(
+                    color: GlobalStore.themeExt.container,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Row(
+                    children: [
+                      Text(
+                        '${e.key}: ',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      Expanded(
+                        child: Text(e.value, overflow: TextOverflow.ellipsis),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
-          ),
+            // 思考内容
+            if (message.reasoning != null)
+              Container(
+                width: double.infinity,
+                margin: EdgeInsets.symmetric(horizontal: 10),
+                child: Text(
+                  message.reasoning!.trim(),
+                  style: const TextStyle(fontSize: 14, height: 1.4),
+                ),
+              ),
+          ],
         ),
       ),
     );

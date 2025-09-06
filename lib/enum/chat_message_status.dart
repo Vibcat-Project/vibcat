@@ -1,4 +1,6 @@
 enum ChatMessageStatus {
+  // 联网搜索中
+  searching,
   // 发送中
   sending,
   // 发送成功

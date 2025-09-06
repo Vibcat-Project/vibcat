@@ -273,6 +273,7 @@ const _ChatMessageroleValueEnumMap = {
   r'assistant': ChatRole.assistant,
 };
 const _ChatMessagestatusEnumValueMap = {
+  r'searching': r'searching',
   r'sending': r'sending',
   r'success': r'success',
   r'failed': r'failed',
@@ -280,6 +281,7 @@ const _ChatMessagestatusEnumValueMap = {
   r'reasoning': r'reasoning',
 };
 const _ChatMessagestatusValueEnumMap = {
+  r'searching': ChatMessageStatus.searching,
   r'sending': ChatMessageStatus.sending,
   r'success': ChatMessageStatus.success,
   r'failed': ChatMessageStatus.failed,

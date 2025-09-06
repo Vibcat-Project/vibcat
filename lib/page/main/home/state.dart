@@ -27,7 +27,7 @@ class HomeState {
   final chatMessage = <ChatMessage>[].obs;
 
   final selectedFiles = <UploadFileWrap>[].obs;
-  final thinkType = AIThinkType.none.obs;
+  final thinkType = AIThinkType.auto.obs;
   final isResponding = false.obs;
   final isTemporaryChat = false.obs;
 

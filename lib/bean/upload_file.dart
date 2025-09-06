@@ -116,11 +116,6 @@ final class UploadLink extends UploadFileWrap {
       name = name ?? '',
       mimeType = mimeType ?? _defaultMimeType;
 
-  UploadLink.fromPath(String text, {String? name, String? mimeType})
-    : file = File(text),
-      name = name ?? '',
-      mimeType = mimeType ?? _defaultMimeType;
-
   @override
   UploadLink copyWith({File? file, String? name, String? mimeType}) {
     final newFile = file ?? this.file;

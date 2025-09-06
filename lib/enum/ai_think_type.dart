@@ -1,6 +1,6 @@
 enum AIThinkType {
-  none(plainName: 'noThink'),
   auto(plainName: 'autoThink'),
+  none(plainName: 'noThink'),
   low(plainName: 'lowThink'),
   medium(plainName: 'mediumThink'),
   high(plainName: 'highThink');
