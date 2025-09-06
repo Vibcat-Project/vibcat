@@ -229,6 +229,8 @@ class HomeLogic extends GetxController with GetSingleTickerProviderStateMixin {
     if (state.isResponding.value) return;
     if (!await _validateChatConditions()) return;
 
+    AppUtil.hideKeyboard();
+
     ChatMessage userMsg;
     if (retry) {
       // 重试时，获取最后一个用户消息
@@ -288,7 +290,6 @@ class HomeLogic extends GetxController with GetSingleTickerProviderStateMixin {
 
   /// 执行聊天
   Future<void> _performChat(ChatMessage userMsg, bool retry) async {
-    AppUtil.hideKeyboard();
     state.isResponding.value = true;
 
     try {
