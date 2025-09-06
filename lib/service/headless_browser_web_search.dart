@@ -1,11 +1,18 @@
-import 'dart:async';
-import 'package:dio/dio.dart';
-import 'package:flutter_inappwebview/flutter_inappwebview.dart';
-import 'package:syncfusion_flutter_pdf/pdf.dart';
+part of 'web_search.dart';
 
-class WebContentExtractor {
-  /// 提取网页/文件内容
-  static Future<String?> extractContent(String url) async {
+class HeadlessBrowserWebSearchService
+    implements WebSearchService<HeadlessBrowserWebSearchArgs> {
+  @override
+  HeadlessBrowserWebSearchArgs args;
+
+  HeadlessBrowserWebSearchService._(this.args);
+
+  @override
+  Future<String?> request() async {
+    return await _extractContent(args.url);
+  }
+
+  Future<String?> _extractContent(String url) async {
     String? content;
     HeadlessInAppWebView? webView;
 
@@ -71,7 +78,7 @@ class WebContentExtractor {
   }
 
   /// 下载 PDF 并提取文字（Syncfusion 版本）
-  static Future<String?> _downloadAndExtractPdf(String url) async {
+  Future<String?> _downloadAndExtractPdf(String url) async {
     try {
       final dio = Dio();
       final response = await dio.get<List<int>>(
@@ -90,7 +97,7 @@ class WebContentExtractor {
   }
 
   /// 其它类型 → 下载为字符串
-  static Future<String?> _downloadAsString(String url) async {
+  Future<String?> _downloadAsString(String url) async {
     try {
       final dio = Dio();
       final response = await dio.get<String>(

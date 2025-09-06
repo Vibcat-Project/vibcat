@@ -15,4 +15,17 @@ class Conversation extends BaseSchema {
 
   @Enumerated(EnumType.name)
   late AIThinkType thinkType;
+
+  Conversation copyWith({
+    int? aiConfigId,
+    String? modelId,
+    String? title,
+    AIThinkType? thinkType,
+  }) {
+    return Conversation()
+      ..aiConfigId = aiConfigId ?? this.aiConfigId
+      ..modelId = modelId ?? this.modelId
+      ..title = title ?? this.title
+      ..thinkType = thinkType ?? this.thinkType;
+  }
 }

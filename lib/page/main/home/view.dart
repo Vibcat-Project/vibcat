@@ -380,14 +380,20 @@ class UserMessageWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(
+      key: isLastUserMessage ? lastUserMsgKey : null,
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
         if (message.files.isNotEmpty) _buildAttachedFiles(),
         _buildMessageBubble(),
+        if (_linkList.isNotEmpty) _buildWebSearchPanel(),
       ],
     );
   }
+
+  List<UploadFileWrap> get _linkList => message.files
+      .where((e) => e is UploadLink && e.file.path.isEmpty)
+      .toList();
 
   Widget _buildAttachedFiles() {
     return FileContainer(files: message.files, height: 70, shrinkWrap: true);
@@ -395,7 +401,6 @@ class UserMessageWidget extends StatelessWidget {
 
   Widget _buildMessageBubble() {
     return Row(
-      key: isLastUserMessage ? lastUserMsgKey : null,
       mainAxisAlignment: MainAxisAlignment.end,
       children: [
         Container(
@@ -418,6 +423,31 @@ class UserMessageWidget extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildWebSearchPanel() {
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0, end: 1.0),
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeOut,
+      builder: (context, value, child) {
+        return Transform.scale(
+          scale: value,
+          alignment: Alignment.topLeft,
+          child: child,
+        );
+      },
+      child: Container(
+        width: double.infinity,
+        margin: const EdgeInsets.only(top: 20),
+        padding: EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: GlobalStore.themeExt.container3,
+          borderRadius: BorderRadius.circular(15),
+        ),
+        child: Text('正在访问链接: ${_linkList.first.name}', maxLines: 1),
+      ),
     );
   }
 }

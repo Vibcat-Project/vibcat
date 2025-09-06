@@ -1,7 +1,12 @@
+import 'dart:io';
+
 import 'package:gaimon/gaimon.dart';
 
 class HapticUtil {
   static Future<bool> get canSupportsHaptic async {
+    if (!Platform.isAndroid && !Platform.isIOS) {
+      return false;
+    }
     return await Gaimon.canSupportsHaptic;
   }
 

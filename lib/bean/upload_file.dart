@@ -2,7 +2,7 @@ import 'dart:io';
 
 import 'package:vibcat/util/file.dart';
 
-abstract class UploadFileWrap {
+sealed class UploadFileWrap {
   /// 实际文件对象
   File get file;
 
@@ -18,7 +18,7 @@ abstract class UploadFileWrap {
   UploadFileWrap deepCopy();
 }
 
-class UploadImage extends UploadFileWrap {
+final class UploadImage extends UploadFileWrap {
   @override
   final File file;
 
@@ -59,7 +59,7 @@ class UploadImage extends UploadFileWrap {
   }
 }
 
-class UploadFile extends UploadFileWrap {
+final class UploadFile extends UploadFileWrap {
   @override
   final File file;
 
@@ -98,9 +98,10 @@ class UploadFile extends UploadFileWrap {
   }
 }
 
-class UploadText extends UploadFileWrap {
+final class UploadLink extends UploadFileWrap {
+  // 这里不用 final，因为需要动态变更值
   @override
-  final File file;
+  File file;
 
   @override
   final String name;
@@ -110,20 +111,20 @@ class UploadText extends UploadFileWrap {
 
   static const _defaultMimeType = 'text/plain';
 
-  UploadText(String text, {String? name, String? mimeType})
+  UploadLink(String text, {String? name, String? mimeType})
     : file = File(text),
       name = name ?? '',
       mimeType = mimeType ?? _defaultMimeType;
 
-  UploadText.fromPath(String text, {String? name, String? mimeType})
+  UploadLink.fromPath(String text, {String? name, String? mimeType})
     : file = File(text),
       name = name ?? '',
       mimeType = mimeType ?? _defaultMimeType;
 
   @override
-  UploadText copyWith({File? file, String? name, String? mimeType}) {
+  UploadLink copyWith({File? file, String? name, String? mimeType}) {
     final newFile = file ?? this.file;
-    return UploadText(
+    return UploadLink(
       newFile.path,
       name: name ?? this.name,
       mimeType: mimeType ?? this.mimeType,
@@ -131,8 +132,8 @@ class UploadText extends UploadFileWrap {
   }
 
   @override
-  UploadText deepCopy() {
-    return UploadText(
+  UploadLink deepCopy() {
+    return UploadLink(
       file.path, // 新建一个 File 实例（路径相同）
       name: name,
       mimeType: mimeType,

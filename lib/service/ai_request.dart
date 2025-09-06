@@ -16,6 +16,14 @@ import '../enum/ai_think_type.dart';
 import 'openai_request.dart';
 
 abstract class AIRequestService {
+  AIModelConfig get config;
+
+  AIModel get model;
+
+  Conversation get conversation;
+
+  List<ChatMessage> get history;
+
   final dio = Dio();
 
   AIRequestService() {
@@ -23,26 +31,21 @@ abstract class AIRequestService {
   }
 
   /// 获取指定服务商的 AI 模型列表
-  Future<List<AIModel>> getModelList({required AIModelConfig config});
+  Future<List<AIModel>> getModelList();
 
   /// 流式返回
-  Stream<ChatMessage?> chatCompletions({
-    required AIModelConfig config,
-    required AIModel model,
-    required Conversation conversation,
-    required List<ChatMessage> history,
-  });
+  Stream<ChatMessage?> chatCompletions();
 
   /// 一次性返回，非流式
-  Future<ChatMessage?> chatCompletionsOnce({
+  Future<ChatMessage?> chatCompletionsOnce();
+
+  /// 工厂构造函数
+  factory AIRequestService.create({
     required AIModelConfig config,
     required AIModel model,
     required Conversation conversation,
     required List<ChatMessage> history,
-  });
-
-  /// 工厂构造函数
-  factory AIRequestService.create(AIModelConfig config) {
+  }) {
     // if (config.provider.compatibleOpenAI == true) {
     //   return OpenAIRequestService();
     // }
@@ -54,11 +57,26 @@ abstract class AIRequestService {
       case AIProviderType.groq:
       case AIProviderType.openRouter:
       case AIProviderType.ollama:
-        return OpenAIRequestService();
+        return OpenAIRequestService(
+          config: config,
+          model: model,
+          conversation: conversation,
+          history: history,
+        );
       case AIProviderType.gemini:
-        return GeminiRequestService();
+        return GeminiRequestService(
+          config: config,
+          model: model,
+          conversation: conversation,
+          history: history,
+        );
       case AIProviderType.volcanoEngine:
-        return VolcanoEngineRequestService();
+        return VolcanoEngineRequestService(
+          config: config,
+          model: model,
+          conversation: conversation,
+          history: history,
+        );
       // case AIProviderType.azureOpenAI:
       // case AIProviderType.claude:
       //   throw Exception('Unsupported AI provider: ${config.provider}');
@@ -76,8 +94,8 @@ abstract class AIRequestService {
           {'type': 'text', 'text': item.content},
           ...await Future.wait(
             item.files.map((e) async {
-              if (e is UploadImage) {
-                return {
+              return switch (e) {
+                UploadImage() => {
                   'type': 'image_url',
                   'image_url': {
                     'url': await FileUtil.fileToBase64DataUri(
@@ -85,9 +103,8 @@ abstract class AIRequestService {
                       mimeType: e.mimeType,
                     ),
                   },
-                };
-              } else if (e is UploadFile) {
-                return {
+                },
+                UploadFile() => {
                   // 'type': 'file',
                   // 'file': {
                   //   'file_data': await FileUtil.fileToBase64DataUri(
@@ -98,10 +115,12 @@ abstract class AIRequestService {
                   'type': 'text',
                   'text':
                       '${e.name}\n${await FileUtil.readFileAsString(e.file.path)}',
-                };
-              } else {
-                return {'type': 'text', 'text': '${e.name}\n${e.file.path}'};
-              }
+                },
+                UploadLink() => {
+                  'type': 'text',
+                  'text': '${e.name}\n${e.file.path}',
+                },
+              };
             }),
           ),
         ];
@@ -122,16 +141,11 @@ abstract class AIRequestService {
         .transform(const LineSplitter());
   }
 
-  Future<Map<String, dynamic>> buildReqParams({
-    required AIModelConfig config,
-    required AIModel model,
-    required Conversation conversation,
-    required List<ChatMessage> history,
-  }) async {
+  Future<Map<String, dynamic>> buildReqParams({bool stream = true}) async {
     final params = <String, dynamic>{
       'model': model.id,
       'messages': await transformMessages(history),
-      'stream': true,
+      'stream': stream,
       'stream_options': {'include_usage': true},
     };
 

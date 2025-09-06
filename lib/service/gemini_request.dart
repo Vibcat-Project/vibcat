@@ -3,29 +3,23 @@ import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:vibcat/service/openai_request.dart';
 
-import '../data/bean/ai_model.dart';
-import '../data/schema/ai_model_config.dart';
 import '../data/schema/chat_message.dart';
-import '../data/schema/conversation.dart';
 import '../enum/chat_message_type.dart';
 
 class GeminiRequestService extends OpenAIRequestService {
+  GeminiRequestService({
+    required super.config,
+    required super.model,
+    required super.conversation,
+    required super.history,
+  });
+
   @override
-  Stream<ChatMessage?> chatCompletions({
-    required AIModelConfig config,
-    required AIModel model,
-    required Conversation conversation,
-    required List<ChatMessage> history,
-  }) async* {
+  Stream<ChatMessage?> chatCompletions() async* {
     try {
       final res = await dio.post(
         '${config.endPoint}/chat/completions',
-        data: await buildReqParams(
-          config: config,
-          model: model,
-          conversation: conversation,
-          history: history,
-        ),
+        data: await buildReqParams(),
         options: Options(
           headers: {'Authorization': 'Bearer ${config.apiKey}'},
           responseType: ResponseType.stream,

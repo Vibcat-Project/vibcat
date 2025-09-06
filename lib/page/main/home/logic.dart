@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
@@ -5,11 +6,13 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:vibcat/bean/upload_file.dart';
+import 'package:vibcat/bean/web_search_args.dart';
 import 'package:vibcat/component/select_model/logic.dart';
 import 'package:vibcat/component/select_model/view.dart';
 import 'package:vibcat/data/bean/ai_model.dart';
 import 'package:vibcat/data/repository/database/app_db.dart';
 import 'package:vibcat/data/repository/net/ai.dart';
+import 'package:vibcat/data/repository/net/web_search.dart';
 import 'package:vibcat/data/schema/chat_message.dart';
 import 'package:vibcat/data/schema/conversation.dart';
 import 'package:vibcat/enum/add_options_type.dart';
@@ -25,7 +28,6 @@ import 'package:vibcat/util/dialog.dart';
 import 'package:vibcat/util/file_picker.dart';
 import 'package:vibcat/util/haptic.dart';
 import 'package:vibcat/util/number.dart';
-import 'package:vibcat/util/web_content_extractor.dart';
 import 'package:vibcat/widget/blur_bottom_sheet.dart';
 
 import '../../../widget/ripple_effect.dart';
@@ -41,6 +43,7 @@ class HomeLogic extends GetxController with GetSingleTickerProviderStateMixin {
 
   final _repoDBApp = Get.find<AppDBRepository>();
   final _repoNetAI = Get.find<AINetRepository>();
+  final _repoWebSearch = Get.find<WebSearchRepository>();
 
   // fontSize * lineHeight
   final double reasoningTextHeight = 14 * 1.4;
@@ -284,8 +287,21 @@ class HomeLogic extends GetxController with GetSingleTickerProviderStateMixin {
 
       // 添加用户消息（非重试时）
       if (!retry) {
-        await _addUserMessage(conv, prompt);
+        final userMsg = await _addUserMessage(conv, prompt);
         tePromptController.clear();
+
+        // 在线搜索
+        for (final item in userMsg.files.whereType<UploadLink>()) {
+          final result = await _repoWebSearch.request(
+            HeadlessBrowserWebSearchArgs(url: item.name),
+          );
+          item.file = File(result ?? ' ');
+          state.chatMessage.refresh();
+        }
+
+        if (!state.isTemporaryChat.value) {
+          await _repoDBApp.upsertChatMessage(userMsg);
+        }
       }
 
       // 发送请求并处理响应
@@ -339,7 +355,7 @@ class HomeLogic extends GetxController with GetSingleTickerProviderStateMixin {
   }
 
   /// 添加用户消息
-  Future<void> _addUserMessage(Conversation conv, String prompt) async {
+  Future<ChatMessage> _addUserMessage(Conversation conv, String prompt) async {
     final msg = ChatMessage()
       ..conversationId = conv.id
       ..role = ChatRole.user
@@ -348,9 +364,9 @@ class HomeLogic extends GetxController with GetSingleTickerProviderStateMixin {
       ..files = List.of(state.selectedFiles);
     // ..files = state.selectedFiles.map((e) => e.deepCopy()).toList();
 
-    if (!state.isTemporaryChat.value) {
-      await _repoDBApp.upsertChatMessage(msg);
-    }
+    // if (!state.isTemporaryChat.value) {
+    //   await _repoDBApp.upsertChatMessage(msg);
+    // }
 
     state
       ..selectedFiles.clear()
@@ -360,6 +376,8 @@ class HomeLogic extends GetxController with GetSingleTickerProviderStateMixin {
 
     await AppUtil.waitKeyboardClosed();
     _adjustPaddingAndScroll(isStreaming: false);
+
+    return msg;
   }
 
   /// 处理聊天响应
@@ -624,7 +642,9 @@ class HomeLogic extends GetxController with GetSingleTickerProviderStateMixin {
     final result = await _repoNetAI.topicNaming(
       config: modelConfig!,
       model: model!,
-      conversation: state.currentConversation.value!,
+      conversation: state.currentConversation.value!.copyWith(
+        thinkType: AIThinkType.none,
+      ),
       history: List.of([
         ChatMessage()
           ..role = ChatRole.system
@@ -668,10 +688,7 @@ class HomeLogic extends GetxController with GetSingleTickerProviderStateMixin {
         final result = await DialogUtil.showInputDialog(title: 'inputLink'.tr);
         if (result == null || result.trim().isEmpty) return;
 
-        final article = await WebContentExtractor.extractContent(result);
-        if (article != null) {
-          state.selectedFiles.add(UploadText(article, name: result));
-        }
+        state.selectedFiles.add(UploadLink('', name: result));
         break;
     }
   }

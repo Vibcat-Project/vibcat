@@ -11,7 +11,23 @@ import '../data/schema/conversation.dart';
 
 class OpenAIRequestService extends AIRequestService {
   @override
-  Future<List<AIModel>> getModelList({required AIModelConfig config}) async {
+  final AIModelConfig config;
+  @override
+  final AIModel model;
+  @override
+  final Conversation conversation;
+  @override
+  final List<ChatMessage> history;
+
+  OpenAIRequestService({
+    required this.config,
+    required this.model,
+    required this.conversation,
+    required this.history,
+  });
+
+  @override
+  Future<List<AIModel>> getModelList() async {
     try {
       final res = await dio.get(
         '${config.endPoint}/models',
@@ -34,21 +50,11 @@ class OpenAIRequestService extends AIRequestService {
   }
 
   @override
-  Stream<ChatMessage?> chatCompletions({
-    required AIModelConfig config,
-    required AIModel model,
-    required Conversation conversation,
-    required List<ChatMessage> history,
-  }) async* {
+  Stream<ChatMessage?> chatCompletions() async* {
     try {
       final res = await dio.post(
         '${config.endPoint}/chat/completions',
-        data: await buildReqParams(
-          config: config,
-          model: model,
-          conversation: conversation,
-          history: history,
-        ),
+        data: await buildReqParams(),
         options: Options(
           headers: {'Authorization': 'Bearer ${config.apiKey}'},
           responseType: ResponseType.stream,
@@ -123,20 +129,11 @@ class OpenAIRequestService extends AIRequestService {
   }
 
   @override
-  Future<ChatMessage?> chatCompletionsOnce({
-    required AIModelConfig config,
-    required AIModel model,
-    required Conversation conversation,
-    required List<ChatMessage> history,
-  }) async {
+  Future<ChatMessage?> chatCompletionsOnce() async {
     try {
       final res = await dio.post(
         '${config.endPoint}/chat/completions',
-        data: {
-          'model': model.id,
-          'messages': await transformMessages(history),
-          'stream': false,
-        },
+        data: await buildReqParams(stream: false),
         options: Options(headers: {'Authorization': 'Bearer ${config.apiKey}'}),
       );
       if (res.statusCode != 200) {

@@ -1,5 +1,3 @@
-import 'dart:math';
-
 import 'package:vibcat/data/bean/ai_model.dart';
 import 'package:vibcat/data/schema/ai_model_config.dart';
 import 'package:vibcat/service/ai_request.dart';
@@ -9,7 +7,12 @@ import '../../schema/conversation.dart';
 
 class AINetRepository {
   Future<List<AIModel>> getModelList(AIModelConfig config) async {
-    return AIRequestService.create(config).getModelList(config: config);
+    return AIRequestService.create(
+      config: config,
+      model: AIModel(id: ''),
+      conversation: Conversation(),
+      history: [],
+    ).getModelList();
   }
 
   Stream<ChatMessage?> chatCompletions({
@@ -18,12 +21,12 @@ class AINetRepository {
     required Conversation conversation,
     required List<ChatMessage> history,
   }) {
-    return AIRequestService.create(config).chatCompletions(
+    return AIRequestService.create(
       config: config,
       model: model,
       conversation: conversation,
       history: history,
-    );
+    ).chatCompletions();
   }
 
   Future<ChatMessage?> topicNaming({
@@ -32,7 +35,7 @@ class AINetRepository {
     required Conversation conversation,
     required List<ChatMessage> history,
   }) async {
-    final result = await AIRequestService.create(config).chatCompletionsOnce(
+    final result = await AIRequestService.create(
       config: config,
       model: model,
       conversation: conversation,
@@ -42,7 +45,7 @@ class AINetRepository {
           ..content = e.content
           ..files = []; // 只清空副本的 files
       }).toList(),
-    );
+    ).chatCompletionsOnce();
     if (result?.content?.isNotEmpty == true) {
       return result;
     }

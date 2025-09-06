@@ -7,6 +7,7 @@ import 'package:vibcat/route/route.dart';
 import 'package:vibcat/widget/blur_bottom_sheet.dart';
 
 import '../bean/option_bottom_sheet.dart';
+import 'app.dart';
 
 class DialogUtil {
   static void showSnackBar(String message) {
@@ -128,8 +129,9 @@ class DialogUtil {
             ),
           ),
           SizedBox(height: 20),
-          SizedBox(
+          Container(
             width: double.infinity,
+            margin: EdgeInsets.symmetric(horizontal: 16),
             child: FilledButton(
               onPressed: () => AppRoute.back(result: teController.text.trim()),
               child: Text('ok'.tr),
@@ -137,6 +139,12 @@ class DialogUtil {
           ),
         ],
       ),
-    );
+    ).whenComplete(() {
+      AppUtil.hideKeyboard();
+
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        teController.dispose();
+      });
+    });
   }
 }

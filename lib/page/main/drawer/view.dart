@@ -56,7 +56,7 @@ class DrawerComponent extends StatelessWidget {
     );
   }
 
-  /// 构建章节标题
+  /// 构建小标题
   SliverToBoxAdapter _buildSectionHeader() {
     return SliverToBoxAdapter(
       child: Container(
@@ -98,7 +98,7 @@ class DrawerComponent extends StatelessWidget {
   Widget _buildBottomNavigation() {
     return Container(
       padding: const EdgeInsets.all(10),
-      margin: EdgeInsets.fromLTRB(16, 0, 16, Get.mediaQuery.padding.bottom),
+      margin: EdgeInsets.fromLTRB(2, 0, 16, Get.mediaQuery.padding.bottom),
       child: _SettingsButton(onTap: logic.showSettingsSheet),
     );
   }

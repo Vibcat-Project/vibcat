@@ -4,14 +4,19 @@ import 'package:dio/dio.dart';
 import 'package:vibcat/service/openai_request.dart';
 
 import '../data/bean/ai_model.dart';
-import '../data/schema/ai_model_config.dart';
 import '../data/schema/chat_message.dart';
-import '../data/schema/conversation.dart';
 import '../enum/chat_message_type.dart';
 
 class VolcanoEngineRequestService extends OpenAIRequestService {
+  VolcanoEngineRequestService({
+    required super.config,
+    required super.model,
+    required super.conversation,
+    required super.history,
+  });
+
   @override
-  Future<List<AIModel>> getModelList({required AIModelConfig config}) async {
+  Future<List<AIModel>> getModelList() async {
     // 暂时没找到 火山引擎 的获取模型列表的 API 接口，只能先预置一份了 👎
     final modelList = [
       "deepseek-v3-1-250821",
@@ -62,21 +67,11 @@ class VolcanoEngineRequestService extends OpenAIRequestService {
   }
 
   @override
-  Stream<ChatMessage?> chatCompletions({
-    required AIModelConfig config,
-    required AIModel model,
-    required Conversation conversation,
-    required List<ChatMessage> history,
-  }) async* {
+  Stream<ChatMessage?> chatCompletions() async* {
     try {
       final res = await dio.post(
         '${config.endPoint}/chat/completions',
-        data: await buildReqParams(
-          config: config,
-          model: model,
-          conversation: conversation,
-          history: history,
-        ),
+        data: await buildReqParams(),
         options: Options(
           headers: {'Authorization': 'Bearer ${config.apiKey}'},
           responseType: ResponseType.stream,
