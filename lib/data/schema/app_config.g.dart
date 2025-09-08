@@ -46,6 +46,12 @@ const AppConfigSchema = CollectionSchema(
       id: 5,
       name: r'topicNamingAIProviderModelId',
       type: IsarType.string,
+    ),
+    r'webSearchType': PropertySchema(
+      id: 6,
+      name: r'webSearchType',
+      type: IsarType.string,
+      enumMap: _AppConfigwebSearchTypeEnumValueMap,
     )
   },
   estimateSize: _appConfigEstimateSize,
@@ -80,6 +86,7 @@ int _appConfigEstimateSize(
       bytesCount += 3 + value.length * 3;
     }
   }
+  bytesCount += 3 + object.webSearchType.name.length * 3;
   return bytesCount;
 }
 
@@ -95,6 +102,7 @@ void _appConfigSerialize(
   writer.writeBool(offsets[3], object.newConvUseLastModel);
   writer.writeLong(offsets[4], object.topicNamingAIProviderId);
   writer.writeString(offsets[5], object.topicNamingAIProviderModelId);
+  writer.writeString(offsets[6], object.webSearchType.name);
 }
 
 AppConfig _appConfigDeserialize(
@@ -110,6 +118,9 @@ AppConfig _appConfigDeserialize(
   object.newConvUseLastModel = reader.readBool(offsets[3]);
   object.topicNamingAIProviderId = reader.readLongOrNull(offsets[4]);
   object.topicNamingAIProviderModelId = reader.readStringOrNull(offsets[5]);
+  object.webSearchType = _AppConfigwebSearchTypeValueEnumMap[
+          reader.readStringOrNull(offsets[6])] ??
+      WebSearchType.bing;
   return object;
 }
 
@@ -132,10 +143,23 @@ P _appConfigDeserializeProp<P>(
       return (reader.readLongOrNull(offset)) as P;
     case 5:
       return (reader.readStringOrNull(offset)) as P;
+    case 6:
+      return (_AppConfigwebSearchTypeValueEnumMap[
+              reader.readStringOrNull(offset)] ??
+          WebSearchType.bing) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
   }
 }
+
+const _AppConfigwebSearchTypeEnumValueMap = {
+  r'bing': r'bing',
+  r'tavily': r'tavily',
+};
+const _AppConfigwebSearchTypeValueEnumMap = {
+  r'bing': WebSearchType.bing,
+  r'tavily': WebSearchType.tavily,
+};
 
 Id _appConfigGetId(AppConfig object) {
   return object.id;
@@ -758,6 +782,142 @@ extension AppConfigQueryFilter
       ));
     });
   }
+
+  QueryBuilder<AppConfig, AppConfig, QAfterFilterCondition>
+      webSearchTypeEqualTo(
+    WebSearchType value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'webSearchType',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AppConfig, AppConfig, QAfterFilterCondition>
+      webSearchTypeGreaterThan(
+    WebSearchType value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'webSearchType',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AppConfig, AppConfig, QAfterFilterCondition>
+      webSearchTypeLessThan(
+    WebSearchType value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'webSearchType',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AppConfig, AppConfig, QAfterFilterCondition>
+      webSearchTypeBetween(
+    WebSearchType lower,
+    WebSearchType upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'webSearchType',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AppConfig, AppConfig, QAfterFilterCondition>
+      webSearchTypeStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'webSearchType',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AppConfig, AppConfig, QAfterFilterCondition>
+      webSearchTypeEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'webSearchType',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AppConfig, AppConfig, QAfterFilterCondition>
+      webSearchTypeContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'webSearchType',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AppConfig, AppConfig, QAfterFilterCondition>
+      webSearchTypeMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'webSearchType',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AppConfig, AppConfig, QAfterFilterCondition>
+      webSearchTypeIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'webSearchType',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<AppConfig, AppConfig, QAfterFilterCondition>
+      webSearchTypeIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'webSearchType',
+        value: '',
+      ));
+    });
+  }
 }
 
 extension AppConfigQueryObject
@@ -845,6 +1005,18 @@ extension AppConfigQuerySortBy on QueryBuilder<AppConfig, AppConfig, QSortBy> {
       sortByTopicNamingAIProviderModelIdDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'topicNamingAIProviderModelId', Sort.desc);
+    });
+  }
+
+  QueryBuilder<AppConfig, AppConfig, QAfterSortBy> sortByWebSearchType() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'webSearchType', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AppConfig, AppConfig, QAfterSortBy> sortByWebSearchTypeDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'webSearchType', Sort.desc);
     });
   }
 }
@@ -943,6 +1115,18 @@ extension AppConfigQuerySortThenBy
       return query.addSortBy(r'topicNamingAIProviderModelId', Sort.desc);
     });
   }
+
+  QueryBuilder<AppConfig, AppConfig, QAfterSortBy> thenByWebSearchType() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'webSearchType', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AppConfig, AppConfig, QAfterSortBy> thenByWebSearchTypeDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'webSearchType', Sort.desc);
+    });
+  }
 }
 
 extension AppConfigQueryWhereDistinct
@@ -986,6 +1170,14 @@ extension AppConfigQueryWhereDistinct
       distinctByTopicNamingAIProviderModelId({bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'topicNamingAIProviderModelId',
+          caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<AppConfig, AppConfig, QDistinct> distinctByWebSearchType(
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'webSearchType',
           caseSensitive: caseSensitive);
     });
   }
@@ -1037,6 +1229,13 @@ extension AppConfigQueryProperty
       topicNamingAIProviderModelIdProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'topicNamingAIProviderModelId');
+    });
+  }
+
+  QueryBuilder<AppConfig, WebSearchType, QQueryOperations>
+      webSearchTypeProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'webSearchType');
     });
   }
 }

@@ -32,61 +32,66 @@ const ChatMessageSchema = CollectionSchema(
       name: r'createdAt',
       type: IsarType.dateTime,
     ),
-    r'filePaths': PropertySchema(
+    r'errorContent': PropertySchema(
       id: 3,
+      name: r'errorContent',
+      type: IsarType.string,
+    ),
+    r'filePaths': PropertySchema(
+      id: 4,
       name: r'filePaths',
       type: IsarType.stringList,
     ),
     r'metadataJson': PropertySchema(
-      id: 4,
+      id: 5,
       name: r'metadataJson',
       type: IsarType.string,
     ),
     r'reasoning': PropertySchema(
-      id: 5,
+      id: 6,
       name: r'reasoning',
       type: IsarType.string,
     ),
     r'reasoningTimeConsuming': PropertySchema(
-      id: 6,
+      id: 7,
       name: r'reasoningTimeConsuming',
       type: IsarType.string,
     ),
     r'role': PropertySchema(
-      id: 7,
+      id: 8,
       name: r'role',
       type: IsarType.string,
       enumMap: _ChatMessageroleEnumValueMap,
     ),
     r'status': PropertySchema(
-      id: 8,
+      id: 9,
       name: r'status',
       type: IsarType.string,
       enumMap: _ChatMessagestatusEnumValueMap,
     ),
     r'tokenInput': PropertySchema(
-      id: 9,
+      id: 10,
       name: r'tokenInput',
       type: IsarType.long,
     ),
     r'tokenOutput': PropertySchema(
-      id: 10,
+      id: 11,
       name: r'tokenOutput',
       type: IsarType.long,
     ),
     r'tokenReasoning': PropertySchema(
-      id: 11,
+      id: 12,
       name: r'tokenReasoning',
       type: IsarType.long,
     ),
     r'type': PropertySchema(
-      id: 12,
+      id: 13,
       name: r'type',
       type: IsarType.string,
       enumMap: _ChatMessagetypeEnumValueMap,
     ),
     r'updatedAt': PropertySchema(
-      id: 13,
+      id: 14,
       name: r'updatedAt',
       type: IsarType.dateTime,
     )
@@ -127,6 +132,12 @@ int _chatMessageEstimateSize(
   var bytesCount = offsets.last;
   {
     final value = object.content;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  {
+    final value = object.errorContent;
     if (value != null) {
       bytesCount += 3 + value.length * 3;
     }
@@ -176,17 +187,18 @@ void _chatMessageSerialize(
   writer.writeString(offsets[0], object.content);
   writer.writeLong(offsets[1], object.conversationId);
   writer.writeDateTime(offsets[2], object.createdAt);
-  writer.writeStringList(offsets[3], object.filePaths);
-  writer.writeString(offsets[4], object.metadataJson);
-  writer.writeString(offsets[5], object.reasoning);
-  writer.writeString(offsets[6], object.reasoningTimeConsuming);
-  writer.writeString(offsets[7], object.role.name);
-  writer.writeString(offsets[8], object.status?.name);
-  writer.writeLong(offsets[9], object.tokenInput);
-  writer.writeLong(offsets[10], object.tokenOutput);
-  writer.writeLong(offsets[11], object.tokenReasoning);
-  writer.writeString(offsets[12], object.type.name);
-  writer.writeDateTime(offsets[13], object.updatedAt);
+  writer.writeString(offsets[3], object.errorContent);
+  writer.writeStringList(offsets[4], object.filePaths);
+  writer.writeString(offsets[5], object.metadataJson);
+  writer.writeString(offsets[6], object.reasoning);
+  writer.writeString(offsets[7], object.reasoningTimeConsuming);
+  writer.writeString(offsets[8], object.role.name);
+  writer.writeString(offsets[9], object.status?.name);
+  writer.writeLong(offsets[10], object.tokenInput);
+  writer.writeLong(offsets[11], object.tokenOutput);
+  writer.writeLong(offsets[12], object.tokenReasoning);
+  writer.writeString(offsets[13], object.type.name);
+  writer.writeDateTime(offsets[14], object.updatedAt);
 }
 
 ChatMessage _chatMessageDeserialize(
@@ -199,23 +211,24 @@ ChatMessage _chatMessageDeserialize(
   object.content = reader.readStringOrNull(offsets[0]);
   object.conversationId = reader.readLong(offsets[1]);
   object.createdAt = reader.readDateTime(offsets[2]);
-  object.filePaths = reader.readStringList(offsets[3]) ?? [];
+  object.errorContent = reader.readStringOrNull(offsets[3]);
+  object.filePaths = reader.readStringList(offsets[4]) ?? [];
   object.id = id;
-  object.metadataJson = reader.readStringOrNull(offsets[4]);
-  object.reasoning = reader.readStringOrNull(offsets[5]);
-  object.reasoningTimeConsuming = reader.readStringOrNull(offsets[6]);
+  object.metadataJson = reader.readStringOrNull(offsets[5]);
+  object.reasoning = reader.readStringOrNull(offsets[6]);
+  object.reasoningTimeConsuming = reader.readStringOrNull(offsets[7]);
   object.role =
-      _ChatMessageroleValueEnumMap[reader.readStringOrNull(offsets[7])] ??
+      _ChatMessageroleValueEnumMap[reader.readStringOrNull(offsets[8])] ??
           ChatRole.system;
   object.status =
-      _ChatMessagestatusValueEnumMap[reader.readStringOrNull(offsets[8])];
-  object.tokenInput = reader.readLong(offsets[9]);
-  object.tokenOutput = reader.readLong(offsets[10]);
-  object.tokenReasoning = reader.readLong(offsets[11]);
+      _ChatMessagestatusValueEnumMap[reader.readStringOrNull(offsets[9])];
+  object.tokenInput = reader.readLong(offsets[10]);
+  object.tokenOutput = reader.readLong(offsets[11]);
+  object.tokenReasoning = reader.readLong(offsets[12]);
   object.type =
-      _ChatMessagetypeValueEnumMap[reader.readStringOrNull(offsets[12])] ??
+      _ChatMessagetypeValueEnumMap[reader.readStringOrNull(offsets[13])] ??
           ChatMessageType.text;
-  object.updatedAt = reader.readDateTime(offsets[13]);
+  object.updatedAt = reader.readDateTime(offsets[14]);
   return object;
 }
 
@@ -233,29 +246,31 @@ P _chatMessageDeserializeProp<P>(
     case 2:
       return (reader.readDateTime(offset)) as P;
     case 3:
-      return (reader.readStringList(offset) ?? []) as P;
-    case 4:
       return (reader.readStringOrNull(offset)) as P;
+    case 4:
+      return (reader.readStringList(offset) ?? []) as P;
     case 5:
       return (reader.readStringOrNull(offset)) as P;
     case 6:
       return (reader.readStringOrNull(offset)) as P;
     case 7:
+      return (reader.readStringOrNull(offset)) as P;
+    case 8:
       return (_ChatMessageroleValueEnumMap[reader.readStringOrNull(offset)] ??
           ChatRole.system) as P;
-    case 8:
+    case 9:
       return (_ChatMessagestatusValueEnumMap[reader.readStringOrNull(offset)])
           as P;
-    case 9:
-      return (reader.readLong(offset)) as P;
     case 10:
       return (reader.readLong(offset)) as P;
     case 11:
       return (reader.readLong(offset)) as P;
     case 12:
+      return (reader.readLong(offset)) as P;
+    case 13:
       return (_ChatMessagetypeValueEnumMap[reader.readStringOrNull(offset)] ??
           ChatMessageType.text) as P;
-    case 13:
+    case 14:
       return (reader.readDateTime(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -759,6 +774,160 @@ extension ChatMessageQueryFilter
         includeLower: includeLower,
         upper: upper,
         includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<ChatMessage, ChatMessage, QAfterFilterCondition>
+      errorContentIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'errorContent',
+      ));
+    });
+  }
+
+  QueryBuilder<ChatMessage, ChatMessage, QAfterFilterCondition>
+      errorContentIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'errorContent',
+      ));
+    });
+  }
+
+  QueryBuilder<ChatMessage, ChatMessage, QAfterFilterCondition>
+      errorContentEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'errorContent',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ChatMessage, ChatMessage, QAfterFilterCondition>
+      errorContentGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'errorContent',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ChatMessage, ChatMessage, QAfterFilterCondition>
+      errorContentLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'errorContent',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ChatMessage, ChatMessage, QAfterFilterCondition>
+      errorContentBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'errorContent',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ChatMessage, ChatMessage, QAfterFilterCondition>
+      errorContentStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'errorContent',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ChatMessage, ChatMessage, QAfterFilterCondition>
+      errorContentEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'errorContent',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ChatMessage, ChatMessage, QAfterFilterCondition>
+      errorContentContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'errorContent',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ChatMessage, ChatMessage, QAfterFilterCondition>
+      errorContentMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'errorContent',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ChatMessage, ChatMessage, QAfterFilterCondition>
+      errorContentIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'errorContent',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<ChatMessage, ChatMessage, QAfterFilterCondition>
+      errorContentIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'errorContent',
+        value: '',
       ));
     });
   }
@@ -2188,6 +2357,19 @@ extension ChatMessageQuerySortBy
     });
   }
 
+  QueryBuilder<ChatMessage, ChatMessage, QAfterSortBy> sortByErrorContent() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'errorContent', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ChatMessage, ChatMessage, QAfterSortBy>
+      sortByErrorContentDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'errorContent', Sort.desc);
+    });
+  }
+
   QueryBuilder<ChatMessage, ChatMessage, QAfterSortBy> sortByMetadataJson() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'metadataJson', Sort.asc);
@@ -2352,6 +2534,19 @@ extension ChatMessageQuerySortThenBy
     });
   }
 
+  QueryBuilder<ChatMessage, ChatMessage, QAfterSortBy> thenByErrorContent() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'errorContent', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ChatMessage, ChatMessage, QAfterSortBy>
+      thenByErrorContentDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'errorContent', Sort.desc);
+    });
+  }
+
   QueryBuilder<ChatMessage, ChatMessage, QAfterSortBy> thenById() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'id', Sort.asc);
@@ -2510,6 +2705,13 @@ extension ChatMessageQueryWhereDistinct
     });
   }
 
+  QueryBuilder<ChatMessage, ChatMessage, QDistinct> distinctByErrorContent(
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'errorContent', caseSensitive: caseSensitive);
+    });
+  }
+
   QueryBuilder<ChatMessage, ChatMessage, QDistinct> distinctByFilePaths() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'filePaths');
@@ -2607,6 +2809,12 @@ extension ChatMessageQueryProperty
   QueryBuilder<ChatMessage, DateTime, QQueryOperations> createdAtProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'createdAt');
+    });
+  }
+
+  QueryBuilder<ChatMessage, String?, QQueryOperations> errorContentProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'errorContent');
     });
   }
 

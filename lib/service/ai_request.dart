@@ -8,6 +8,7 @@ import 'package:vibcat/data/schema/conversation.dart';
 import 'package:vibcat/enum/ai_provider_type.dart';
 import 'package:vibcat/global/models.dart';
 import 'package:vibcat/service/gemini_request.dart';
+import 'package:vibcat/service/http.dart';
 import 'package:vibcat/service/volcano_engine_request.dart';
 import 'package:vibcat/util/file.dart';
 
@@ -24,11 +25,11 @@ abstract class AIRequestService {
 
   List<ChatMessage> get history;
 
-  final dio = Dio();
+  Map<String, Object>? get additionalParams;
 
-  AIRequestService() {
-    dio.interceptors.add(LogInterceptor(requestBody: true, responseBody: true));
-  }
+  final httpClient = IHttpClient.create();
+
+  AIRequestService();
 
   /// 获取指定服务商的 AI 模型列表
   Future<List<AIModel>> getModelList();
@@ -45,6 +46,7 @@ abstract class AIRequestService {
     required AIModel model,
     required Conversation conversation,
     required List<ChatMessage> history,
+    Map<String, Object>? additionalParams,
   }) {
     // if (config.provider.compatibleOpenAI == true) {
     //   return OpenAIRequestService();
@@ -62,6 +64,7 @@ abstract class AIRequestService {
           model: model,
           conversation: conversation,
           history: history,
+          additionalParams: additionalParams,
         );
       case AIProviderType.gemini:
         return GeminiRequestService(
@@ -69,6 +72,7 @@ abstract class AIRequestService {
           model: model,
           conversation: conversation,
           history: history,
+          additionalParams: additionalParams,
         );
       case AIProviderType.volcanoEngine:
         return VolcanoEngineRequestService(
@@ -76,6 +80,7 @@ abstract class AIRequestService {
           model: model,
           conversation: conversation,
           history: history,
+          additionalParams: additionalParams,
         );
       // case AIProviderType.azureOpenAI:
       // case AIProviderType.claude:
@@ -117,6 +122,10 @@ abstract class AIRequestService {
                       '${e.name}\n${await FileUtil.readFileAsString(e.file.path)}',
                 },
                 UploadLink() => {
+                  'type': 'text',
+                  'text': '${e.name}\n${e.file.path}',
+                },
+                UploadWebSearch() => {
                   'type': 'text',
                   'text': '${e.name}\n${e.file.path}',
                 },

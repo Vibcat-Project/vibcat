@@ -50,6 +50,7 @@ class Translation extends Translations {
       'inputContent': '输入内容',
       'inputLink': '输入链接',
       'visitingWebsite': '正在访问链接',
+      'webSearch': '联网',
     },
     'en_US': {'appName': 'Vibcat', 'appSlogan': ''},
   };

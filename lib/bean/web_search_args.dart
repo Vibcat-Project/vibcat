@@ -1,12 +1,16 @@
-sealed class WebSearchArgs {}
+sealed class WebSearchArgs {
+  String get kw;
+}
 
-final class HeadlessBrowserWebSearchArgs implements WebSearchArgs {
-  final String url;
+final class BingWebSearchArgs implements WebSearchArgs {
+  @override
+  final String kw;
 
-  const HeadlessBrowserWebSearchArgs({required this.url});
+  const BingWebSearchArgs({required this.kw});
 }
 
 final class TavilyWebSearchArgs implements WebSearchArgs {
+  @override
   final String kw;
 
   const TavilyWebSearchArgs({required this.kw});

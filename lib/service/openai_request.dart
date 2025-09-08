@@ -4,10 +4,12 @@ import 'package:dio/dio.dart';
 import 'package:vibcat/data/bean/ai_model.dart';
 import 'package:vibcat/data/schema/chat_message.dart';
 import 'package:vibcat/data/schema/ai_model_config.dart';
+import 'package:vibcat/enum/ai_provider_type.dart';
 import 'package:vibcat/enum/chat_message_type.dart';
 import 'package:vibcat/service/ai_request.dart';
 
 import '../data/schema/conversation.dart';
+import '../global/models.dart';
 
 class OpenAIRequestService extends AIRequestService {
   @override
@@ -18,22 +20,25 @@ class OpenAIRequestService extends AIRequestService {
   final Conversation conversation;
   @override
   final List<ChatMessage> history;
+  @override
+  Map<String, Object>? additionalParams;
 
   OpenAIRequestService({
     required this.config,
     required this.model,
     required this.conversation,
     required this.history,
+    this.additionalParams,
   });
 
   @override
   Future<List<AIModel>> getModelList() async {
     try {
-      final res = await dio.get(
+      final res = await httpClient.get(
         '${config.endPoint}/models',
-        options: Options(headers: {'Authorization': 'Bearer ${config.apiKey}'}),
+        headers: {'Authorization': 'Bearer ${config.apiKey}'},
       );
-      if (res.statusCode != 200) {
+      if (!res.isSuccess || res.data == null) {
         return [];
       }
 
@@ -52,16 +57,19 @@ class OpenAIRequestService extends AIRequestService {
   @override
   Stream<ChatMessage?> chatCompletions() async* {
     try {
-      final res = await dio.post(
+      final res = await httpClient.post(
         '${config.endPoint}/chat/completions',
-        data: await buildReqParams(),
-        options: Options(
-          headers: {'Authorization': 'Bearer ${config.apiKey}'},
-          responseType: ResponseType.stream,
-        ),
+        body: await buildReqParams(),
+        headers: {'Authorization': 'Bearer ${config.apiKey}'},
+        responseType: ResponseType.stream,
       );
 
-      final stream = transformStream(res);
+      if (!res.isSuccess || res.data == null) {
+        yield null;
+        return;
+      }
+
+      final stream = transformStream(res.raw);
 
       var thinkFinished = true;
 
@@ -117,49 +125,51 @@ class OpenAIRequestService extends AIRequestService {
           }
         }
       }
-    } on DioException catch (e) {
-      if (e.response != null) {
-        print(e.response!.data);
-      }
-      yield null;
     } catch (e) {
-      print(e);
       yield null;
     }
   }
 
   @override
   Future<ChatMessage?> chatCompletionsOnce() async {
-    try {
-      final res = await dio.post(
-        '${config.endPoint}/chat/completions',
-        data: await buildReqParams(stream: false),
-        options: Options(headers: {'Authorization': 'Bearer ${config.apiKey}'}),
-      );
-      if (res.statusCode != 200) {
-        return null;
-      }
+    final data = {
+      'model': model.id,
+      'messages': await transformMessages(history),
+      'stream': false,
+      'stream_options': {'include_usage': true},
+    };
+    if (ModelsConfig.supportThinkingControl[AIProviderType.groq]?[model.id] !=
+        null) {
+      data.addAll({'reasoning_format': 'parsed'});
+    }
+    if (additionalParams != null) {
+      data.addAll(additionalParams!);
+    }
 
-      final resultMsg = ChatMessage();
-
-      // 提取 Token Usage
-      final usage = res.data['usage'];
-      if (usage != null) {
-        resultMsg
-          ..tokenOutput = usage['completion_tokens'] ?? 0
-          ..tokenInput = usage['prompt_tokens'] ?? 0;
-      }
-
-      if (res.data['choices']?.isEmpty ?? true) {
-        return resultMsg;
-      }
-
-      final content = res.data['choices'][0]['message']?['content'];
-      return resultMsg..content = content;
-    } on DioException catch (e) {
-      return null;
-    } catch (e) {
+    final res = await httpClient.post(
+      '${config.endPoint}/chat/completions',
+      body: data,
+      headers: {'Authorization': 'Bearer ${config.apiKey}'},
+    );
+    if (!res.isSuccess || res.data == null) {
       return null;
     }
+
+    final resultMsg = ChatMessage();
+
+    // 提取 Token Usage
+    final usage = res.data['usage'];
+    if (usage != null) {
+      resultMsg
+        ..tokenOutput = usage['completion_tokens'] ?? 0
+        ..tokenInput = usage['prompt_tokens'] ?? 0;
+    }
+
+    if (res.data['choices']?.isEmpty ?? true) {
+      return resultMsg;
+    }
+
+    final content = res.data['choices'][0]['message']?['content'];
+    return resultMsg..content = content;
   }
 }

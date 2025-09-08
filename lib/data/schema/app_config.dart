@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:isar/isar.dart';
 import 'package:vibcat/data/schema/ai_model_config.dart';
+import 'package:vibcat/enum/web_search_type.dart';
 
 part 'app_config.g.dart';
 
@@ -53,6 +54,11 @@ class AppConfig {
   /// --------------------------------------
   // 新对话使用上一次的模型
   bool newConvUseLastModel = true;
+
+  /// --------------------------------------
+  // WebSearch 类型
+  @Enumerated(EnumType.name)
+  WebSearchType webSearchType = WebSearchType.bing;
 
   void prepareForSave() {
     topicNamingAIProviderId = topicNamingAIProvider?.id;

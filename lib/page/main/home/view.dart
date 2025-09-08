@@ -346,7 +346,12 @@ class HomeComponent extends StatelessWidget {
   }
 
   Widget _buildNetworkButton() {
-    return RoundButton(icon: Icon(AppIcon.network), text: '联网', onTap: () {});
+    return RoundButton(
+      icon: Icon(AppIcon.network),
+      color: state.enableWebSearch.value ? GlobalStore.themeExt.border : null,
+      text: 'webSearch'.tr,
+      onTap: () => state.enableWebSearch.value = !state.enableWebSearch.value,
+    );
   }
 
   Widget _buildSendButton() {
@@ -385,14 +390,17 @@ class UserMessageWidget extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
-        if (message.files.isNotEmpty) _buildAttachedFiles(),
+        if (_msgFiles.isNotEmpty) _buildAttachedFiles(),
         _buildMessageBubble(),
       ],
     );
   }
 
+  List<UploadFileWrap> get _msgFiles =>
+      message.files.where((e) => e is! UploadWebSearch).toList();
+
   Widget _buildAttachedFiles() {
-    return FileContainer(files: message.files, height: 70, shrinkWrap: true);
+    return FileContainer(files: _msgFiles, height: 70, shrinkWrap: true);
   }
 
   Widget _buildMessageBubble() {
@@ -457,7 +465,7 @@ class AssistantMessageWidget extends StatelessWidget {
       message.status == ChatMessageStatus.searching ||
       // 这个判断如果不加的话，下面的 TweenAnimationBuilder 会重复执行，因为上面的 build 会在状态切换的时候重新生成 _buildReasoningSection()，Widget 缓存信息会丢失
       message.status == ChatMessageStatus.reasoning ||
-      (message.reasoning != null && message.reasoning!.isNotEmpty);
+      message.reasoning != null;
 
   bool _showActions() => message.status == ChatMessageStatus.success;
 
@@ -640,7 +648,7 @@ class ReasoningContainer extends StatelessWidget {
                   child: Row(
                     children: [
                       Text(
-                        '${e.key}: ',
+                        '${e.key}${e.value.trim().isEmpty ? '' : ': '}',
                         style: TextStyle(fontWeight: FontWeight.bold),
                       ),
                       Expanded(
@@ -711,9 +719,17 @@ class RoundButton extends StatelessWidget {
         decoration: BoxDecoration(
           color: color,
           shape: isCircle ? BoxShape.circle : BoxShape.rectangle,
+          // border: hasBorder
+          //     ? Border.all(color: GlobalStore.themeExt.border!)
+          //     : null,
+          borderRadius: isCircle ? null : BorderRadius.circular(100),
+        ),
+        // 避免 border 属性额外占位
+        foregroundDecoration: BoxDecoration(
           border: hasBorder
               ? Border.all(color: GlobalStore.themeExt.border!)
               : null,
+          shape: isCircle ? BoxShape.circle : BoxShape.rectangle,
           borderRadius: isCircle ? null : BorderRadius.circular(100),
         ),
         child: isCircle ? icon : _buildButtonContent(),

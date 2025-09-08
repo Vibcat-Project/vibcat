@@ -30,6 +30,7 @@ class HomeState {
   final thinkType = AIThinkType.auto.obs;
   final isResponding = false.obs;
   final isTemporaryChat = false.obs;
+  final enableWebSearch = false.obs;
 
   HomeState() {
     ///Initialize variables

@@ -1,13 +1,15 @@
 part of 'web_search.dart';
 
-class TavilyWebSearchService implements WebSearchService<TavilyWebSearchArgs> {
+class TavilyWebSearchService extends WebSearchService<TavilyWebSearchArgs> {
   @override
-  TavilyWebSearchArgs args;
+  final TavilyWebSearchArgs args;
+  @override
+  final OnVisitUrl? onVisitUrl;
 
-  TavilyWebSearchService._(this.args);
+  TavilyWebSearchService._(this.args, {this.onVisitUrl});
 
   @override
-  Future<String?> request() {
+  Future<List<WebSearchItem>> request() {
     throw UnimplementedError();
   }
 }

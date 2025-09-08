@@ -12,21 +12,25 @@ class GeminiRequestService extends OpenAIRequestService {
     required super.model,
     required super.conversation,
     required super.history,
+    super.additionalParams,
   });
 
   @override
   Stream<ChatMessage?> chatCompletions() async* {
     try {
-      final res = await dio.post(
+      final res = await httpClient.post(
         '${config.endPoint}/chat/completions',
-        data: await buildReqParams(),
-        options: Options(
-          headers: {'Authorization': 'Bearer ${config.apiKey}'},
-          responseType: ResponseType.stream,
-        ),
+        body: await buildReqParams(),
+        headers: {'Authorization': 'Bearer ${config.apiKey}'},
+        responseType: ResponseType.stream,
       );
 
-      final stream = transformStream(res);
+      if (!res.isSuccess || res.data == null) {
+        yield null;
+        return;
+      }
+
+      final stream = transformStream(res.raw);
 
       var thinkFinished = true;
 

@@ -135,3 +135,40 @@ final class UploadLink extends UploadFileWrap {
     );
   }
 }
+
+final class UploadWebSearch extends UploadFileWrap {
+  @override
+  final File file;
+
+  @override
+  final String name;
+
+  @override
+  final String mimeType;
+
+  static const _defaultMimeType = 'text/plain';
+
+  UploadWebSearch(String text, {String? name, String? mimeType})
+    : file = File(text),
+      name = name ?? '',
+      mimeType = mimeType ?? _defaultMimeType;
+
+  @override
+  UploadWebSearch copyWith({File? file, String? name, String? mimeType}) {
+    final newFile = file ?? this.file;
+    return UploadWebSearch(
+      newFile.path,
+      name: name ?? this.name,
+      mimeType: mimeType ?? this.mimeType,
+    );
+  }
+
+  @override
+  UploadWebSearch deepCopy() {
+    return UploadWebSearch(
+      file.path, // 新建一个 File 实例（路径相同）
+      name: name,
+      mimeType: mimeType,
+    );
+  }
+}

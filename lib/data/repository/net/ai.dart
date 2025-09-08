@@ -29,11 +29,12 @@ class AINetRepository {
     ).chatCompletions();
   }
 
-  Future<ChatMessage?> topicNaming({
+  Future<ChatMessage?> chatCompletionOnce({
     required AIModelConfig config,
     required AIModel model,
     required Conversation conversation,
     required List<ChatMessage> history,
+    Map<String, Object>? additionalParams,
   }) async {
     final result = await AIRequestService.create(
       config: config,
@@ -45,6 +46,7 @@ class AINetRepository {
           ..content = e.content
           ..files = []; // 只清空副本的 files
       }).toList(),
+      additionalParams: additionalParams,
     ).chatCompletionsOnce();
     if (result?.content?.isNotEmpty == true) {
       return result;

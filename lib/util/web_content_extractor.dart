@@ -1,18 +1,11 @@
-part of 'web_search.dart';
+import 'dart:async';
 
-class HeadlessBrowserWebSearchService
-    implements WebSearchService<HeadlessBrowserWebSearchArgs> {
-  @override
-  HeadlessBrowserWebSearchArgs args;
+import 'package:dio/dio.dart';
+import 'package:flutter_inappwebview/flutter_inappwebview.dart';
+import 'package:syncfusion_flutter_pdf/pdf.dart';
 
-  HeadlessBrowserWebSearchService._(this.args);
-
-  @override
-  Future<String?> request() async {
-    return await _extractContent(args.url);
-  }
-
-  Future<String?> _extractContent(String url) async {
+class WebContentExtractor {
+  static Future<String?> extractContent(String url) async {
     String? content;
     HeadlessInAppWebView? webView;
 
@@ -23,9 +16,10 @@ class HeadlessBrowserWebSearchService
       webView = HeadlessInAppWebView(
         initialUrlRequest: URLRequest(url: WebUri(url)),
         onReceivedHttpError: (controller, req, res) {
-          completer.completeError(
-            "HTTP Error: ${res.statusCode} ${res.reasonPhrase}",
-          );
+          // completer.completeError(
+          //   "HTTP Error: ${res.statusCode} ${res.reasonPhrase}",
+          // );
+          completer.complete(null);
         },
         onNavigationResponse: (controller, navigationResponse) async {
           if (navigationResponse.isForMainFrame) {
@@ -64,7 +58,8 @@ class HeadlessBrowserWebSearchService
 
             completer.complete(content);
           } catch (e) {
-            completer.completeError(e);
+            // completer.completeError(e);
+            completer.complete(null);
           }
         },
       );
@@ -78,7 +73,7 @@ class HeadlessBrowserWebSearchService
   }
 
   /// 下载 PDF 并提取文字（Syncfusion 版本）
-  Future<String?> _downloadAndExtractPdf(String url) async {
+  static Future<String?> _downloadAndExtractPdf(String url) async {
     try {
       final dio = Dio();
       final response = await dio.get<List<int>>(
@@ -97,7 +92,7 @@ class HeadlessBrowserWebSearchService
   }
 
   /// 其它类型 → 下载为字符串
-  Future<String?> _downloadAsString(String url) async {
+  static Future<String?> _downloadAsString(String url) async {
     try {
       final dio = Dio();
       final response = await dio.get<String>(

@@ -23,6 +23,7 @@ class ChatMessage extends BaseSchema {
 
   String? content;
   String? reasoning;
+  String? errorContent;
 
   @protected
   List<String> filePaths = [];
@@ -97,6 +98,9 @@ class ChatMessage extends BaseSchema {
             break;
           case 'UploadLink':
             files.add(UploadLink(path, name: name, mimeType: mimeType));
+            break;
+          case 'UploadWebSearch':
+            files.add(UploadWebSearch(path, name: name, mimeType: mimeType));
             break;
         }
       }

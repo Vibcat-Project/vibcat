@@ -4,12 +4,13 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import 'package:json5/json5.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:vibcat/bean/upload_file.dart';
-import 'package:vibcat/bean/web_search_args.dart';
 import 'package:vibcat/component/select_model/logic.dart';
 import 'package:vibcat/component/select_model/view.dart';
 import 'package:vibcat/data/bean/ai_model.dart';
+import 'package:vibcat/data/bean/questions.dart';
 import 'package:vibcat/data/repository/database/app_db.dart';
 import 'package:vibcat/data/repository/net/ai.dart';
 import 'package:vibcat/data/repository/net/web_search.dart';
@@ -28,6 +29,7 @@ import 'package:vibcat/util/dialog.dart';
 import 'package:vibcat/util/file_picker.dart';
 import 'package:vibcat/util/haptic.dart';
 import 'package:vibcat/util/number.dart';
+import 'package:vibcat/util/web_content_extractor.dart';
 import 'package:vibcat/widget/blur_bottom_sheet.dart';
 
 import '../../../widget/ripple_effect.dart';
@@ -300,7 +302,7 @@ class HomeLogic extends GetxController with GetSingleTickerProviderStateMixin {
       state.chatMessage.add(responseMsg);
 
       if (!retry) {
-        // 在线搜索
+        // 在线搜索（用户主动添加链接）
         final links = userMsg.files.whereType<UploadLink>();
         if (links.isNotEmpty) {
           responseMsg.status = ChatMessageStatus.searching;
@@ -312,10 +314,86 @@ class HomeLogic extends GetxController with GetSingleTickerProviderStateMixin {
           _adjustPaddingAndScroll();
           scrollReasoningToBottom(true);
 
-          final result = await _repoWebSearch.request(
-            HeadlessBrowserWebSearchArgs(url: item.name),
-          );
+          final result = await WebContentExtractor.extractContent(item.name);
           item.file = File(result ?? '');
+        }
+
+        // 在线搜索（开启“联网”功能）
+        if (state.enableWebSearch.value) {
+          responseMsg.status = ChatMessageStatus.searching;
+
+          responseMsg.statusText.add(MapEntry('正在生成关键词'.tr, ''));
+          state.chatMessage.refresh();
+          _adjustPaddingAndScroll();
+          scrollReasoningToBottom(true);
+
+          final res = await _repoNetAI.chatCompletionOnce(
+            config: state.currentAIModelConfig.value!,
+            model: state.currentAIModel.value!,
+            conversation: state.currentConversation.value!,
+            history: [
+              ChatMessage()
+                ..role = ChatRole.system
+                ..content = Prompts.webSearchKwRephraser,
+              ChatMessage()
+                ..role = ChatRole.user
+                ..content = userMsg.content,
+            ],
+            additionalParams: Prompts.webSearchKwRephraserJsonSchema,
+          );
+          if (res != null) {
+            // 3i/atlas彗星是外星飞船的可能性有多大
+            print('\n==============\n${res.content}\n==============\n');
+
+            try {
+              final questions = Questions.fromJson(JSON5.parse(res.content!));
+              for (final question in questions.questions) {
+                if (question.type == QuestionType.summarize) {
+                  for (final url in question.links) {
+                    responseMsg.statusText.add(
+                      MapEntry('visitingWebsite'.tr, url),
+                    );
+                    state.chatMessage.refresh();
+                    _adjustPaddingAndScroll();
+                    scrollReasoningToBottom(true);
+
+                    final result = await WebContentExtractor.extractContent(
+                      url,
+                    );
+                    userMsg.files.add(UploadWebSearch(result ?? '', name: url));
+                  }
+                }
+
+                if (question.type == QuestionType.webSearch) {
+                  responseMsg.statusText.add(
+                    MapEntry('正在搜索关键词'.tr, question.query),
+                  );
+                  state.chatMessage.refresh();
+                  _adjustPaddingAndScroll();
+                  scrollReasoningToBottom(true);
+
+                  final kwResult = await _repoWebSearch.request(
+                    question.query,
+                    onVisitUrl: (url) {
+                      responseMsg.statusText.add(
+                        MapEntry('visitingWebsite'.tr, url),
+                      );
+                      state.chatMessage.refresh();
+                      _adjustPaddingAndScroll();
+                      scrollReasoningToBottom(true);
+                    },
+                  );
+                  for (final value in kwResult) {
+                    userMsg.files.add(
+                      UploadWebSearch(value.content, name: value.url),
+                    );
+                  }
+                }
+              }
+            } catch (e) {
+              print('\n**************\n$e\n**************\n');
+            }
+          }
         }
 
         if (!state.isTemporaryChat.value) {
@@ -657,7 +735,7 @@ class HomeLogic extends GetxController with GetSingleTickerProviderStateMixin {
       model = AIModel(id: GlobalStore.config.topicNamingAIProviderModelId!);
     }
 
-    final result = await _repoNetAI.topicNaming(
+    final result = await _repoNetAI.chatCompletionOnce(
       config: modelConfig!,
       model: model!,
       conversation: state.currentConversation.value!.copyWith(
