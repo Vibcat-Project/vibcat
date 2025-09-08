@@ -295,110 +295,21 @@ class HomeLogic extends GetxController with GetSingleTickerProviderStateMixin {
     state.isResponding.value = true;
 
     try {
-      // 添加响应消息占位
+      // 创建响应消息占位
       final responseMsg = _createResponseMessage(
         state.currentConversation.value!,
       );
       state.chatMessage.add(responseMsg);
 
       if (!retry) {
-        // 在线搜索（用户主动添加链接）
-        final links = userMsg.files.whereType<UploadLink>();
-        if (links.isNotEmpty) {
-          responseMsg.status = ChatMessageStatus.searching;
-        }
+        // 处理用户主动添加的链接
+        await _processUserLinks(userMsg, responseMsg);
 
-        for (final item in links) {
-          responseMsg.statusText.add(MapEntry('visitingWebsite'.tr, item.name));
-          state.chatMessage.refresh();
-          _adjustPaddingAndScroll();
-          scrollReasoningToBottom(true);
+        // 处理在线搜索功能
+        await _processWebSearch(userMsg, responseMsg);
 
-          final result = await WebContentExtractor.extractContent(item.name);
-          item.file = File(result ?? '');
-        }
-
-        // 在线搜索（开启“联网”功能）
-        if (state.enableWebSearch.value) {
-          responseMsg.status = ChatMessageStatus.searching;
-
-          responseMsg.statusText.add(MapEntry('正在生成关键词'.tr, ''));
-          state.chatMessage.refresh();
-          _adjustPaddingAndScroll();
-          scrollReasoningToBottom(true);
-
-          final res = await _repoNetAI.chatCompletionOnce(
-            config: state.currentAIModelConfig.value!,
-            model: state.currentAIModel.value!,
-            conversation: state.currentConversation.value!,
-            history: [
-              ChatMessage()
-                ..role = ChatRole.system
-                ..content = Prompts.webSearchKwRephraser,
-              ChatMessage()
-                ..role = ChatRole.user
-                ..content = userMsg.content,
-            ],
-            additionalParams: Prompts.webSearchKwRephraserJsonSchema,
-          );
-          if (res != null) {
-            // 3i/atlas彗星是外星飞船的可能性有多大
-            print('\n==============\n${res.content}\n==============\n');
-
-            try {
-              final questions = Questions.fromJson(JSON5.parse(res.content!));
-              for (final question in questions.questions) {
-                if (question.type == QuestionType.summarize) {
-                  for (final url in question.links) {
-                    responseMsg.statusText.add(
-                      MapEntry('visitingWebsite'.tr, url),
-                    );
-                    state.chatMessage.refresh();
-                    _adjustPaddingAndScroll();
-                    scrollReasoningToBottom(true);
-
-                    final result = await WebContentExtractor.extractContent(
-                      url,
-                    );
-                    userMsg.files.add(UploadWebSearch(result ?? '', name: url));
-                  }
-                }
-
-                if (question.type == QuestionType.webSearch) {
-                  responseMsg.statusText.add(
-                    MapEntry('正在搜索关键词'.tr, question.query),
-                  );
-                  state.chatMessage.refresh();
-                  _adjustPaddingAndScroll();
-                  scrollReasoningToBottom(true);
-
-                  final kwResult = await _repoWebSearch.request(
-                    question.query,
-                    onVisitUrl: (url) {
-                      responseMsg.statusText.add(
-                        MapEntry('visitingWebsite'.tr, url),
-                      );
-                      state.chatMessage.refresh();
-                      _adjustPaddingAndScroll();
-                      scrollReasoningToBottom(true);
-                    },
-                  );
-                  for (final value in kwResult) {
-                    userMsg.files.add(
-                      UploadWebSearch(value.content, name: value.url),
-                    );
-                  }
-                }
-              }
-            } catch (e) {
-              print('\n**************\n$e\n**************\n');
-            }
-          }
-        }
-
-        if (!state.isTemporaryChat.value) {
-          await _repoDBApp.upsertChatMessage(userMsg);
-        }
+        // 保存用户消息到数据库
+        await _saveUserMessage(userMsg);
       }
 
       // 发送请求并处理响应
@@ -408,6 +319,159 @@ class HomeLogic extends GetxController with GetSingleTickerProviderStateMixin {
       _handleChatError();
     } finally {
       state.isResponding.value = false;
+    }
+  }
+
+  /// 处理用户主动添加的链接
+  Future<void> _processUserLinks(
+    ChatMessage userMsg,
+    ChatMessage responseMsg,
+  ) async {
+    final links = userMsg.files.whereType<UploadLink>();
+    if (links.isEmpty) return;
+
+    responseMsg.status = ChatMessageStatus.searching;
+
+    for (final link in links) {
+      await _processWebsiteLink(link, responseMsg);
+    }
+  }
+
+  /// 处理单个网站链接
+  Future<void> _processWebsiteLink(
+    UploadLink link,
+    ChatMessage responseMsg,
+  ) async {
+    _updateSearchStatus(responseMsg, 'visitingWebsite'.tr, link.name);
+
+    final result = await WebContentExtractor.extractContent(link.name);
+    link.file = File(result ?? '');
+  }
+
+  /// 处理在线搜索功能
+  Future<void> _processWebSearch(
+    ChatMessage userMsg,
+    ChatMessage responseMsg,
+  ) async {
+    if (!state.enableWebSearch.value) return;
+
+    responseMsg.status = ChatMessageStatus.searching;
+
+    final searchQuestions = await _generateSearchQuestions(
+      userMsg,
+      responseMsg,
+    );
+    if (searchQuestions != null) {
+      await _executeSearchQuestions(searchQuestions, userMsg, responseMsg);
+    }
+  }
+
+  /// 生成搜索问题
+  Future<Questions?> _generateSearchQuestions(
+    ChatMessage userMsg,
+    ChatMessage responseMsg,
+  ) async {
+    _updateSearchStatus(responseMsg, '正在生成关键词'.tr, '');
+
+    final res = await _repoNetAI.chatCompletionOnce(
+      config: state.currentAIModelConfig.value!,
+      model: state.currentAIModel.value!,
+      conversation: state.currentConversation.value!,
+      history: [
+        ChatMessage()
+          ..role = ChatRole.system
+          ..content = Prompts.webSearchKwRephraser,
+        ChatMessage()
+          ..role = ChatRole.user
+          ..content = userMsg.content,
+      ],
+      additionalParams: Prompts.webSearchKwRephraserJsonSchema,
+    );
+
+    if (res == null) return null;
+
+    try {
+      return Questions.fromJson(JSON5.parse(res.content!));
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /// 执行搜索问题
+  Future<void> _executeSearchQuestions(
+    Questions questions,
+    ChatMessage userMsg,
+    ChatMessage responseMsg,
+  ) async {
+    for (final question in questions.questions) {
+      switch (question.type) {
+        case QuestionType.summarize:
+          await _processSummarizeQuestion(question, userMsg, responseMsg);
+          break;
+        case QuestionType.webSearch:
+          // 大模型的指令遵循可能不太理想，对于用户发送的信息中包含链接的情况，可能会被解析为搜索模式，而不是基于链接去回答，所以这里简单判断下，只要 links 不为空，就直接使用总结模式
+          if (question.links.isNotEmpty) {
+            await _processSummarizeQuestion(question, userMsg, responseMsg);
+          } else {
+            await _processWebSearchQuestion(question, userMsg, responseMsg);
+          }
+          break;
+        case QuestionType.notNeeded:
+          // Do nothing
+          break;
+      }
+    }
+  }
+
+  /// 处理总结类型问题
+  Future<void> _processSummarizeQuestion(
+    Question question,
+    ChatMessage userMsg,
+    ChatMessage responseMsg,
+  ) async {
+    for (final url in question.links) {
+      _updateSearchStatus(responseMsg, 'visitingWebsite'.tr, url);
+
+      final result = await WebContentExtractor.extractContent(url);
+      userMsg.files.add(UploadWebSearch(result ?? '', name: url));
+    }
+  }
+
+  /// 处理网络搜索类型问题
+  Future<void> _processWebSearchQuestion(
+    Question question,
+    ChatMessage userMsg,
+    ChatMessage responseMsg,
+  ) async {
+    _updateSearchStatus(responseMsg, '正在搜索关键词'.tr, question.query);
+
+    final kwResult = await _repoWebSearch.request(
+      question.query,
+      onVisitUrl: (url) =>
+          _updateSearchStatus(responseMsg, 'visitingWebsite'.tr, url),
+    );
+
+    for (final value in kwResult) {
+      userMsg.files.add(UploadWebSearch(value.content, name: value.url));
+    }
+  }
+
+  /// 更新搜索状态
+  void _updateSearchStatus(
+    ChatMessage responseMsg,
+    String status,
+    String detail,
+  ) {
+    responseMsg.statusText.add(MapEntry(status, detail));
+    state.chatMessage.refresh();
+    _adjustPaddingAndScroll();
+    scrollReasoningToBottom(true);
+  }
+
+  /// 保存用户消息到数据库
+  Future<void> _saveUserMessage(ChatMessage userMsg) async {
+    if (!state.isTemporaryChat.value) {
+      await _repoDBApp.upsertChatMessage(userMsg);
     }
   }
 
