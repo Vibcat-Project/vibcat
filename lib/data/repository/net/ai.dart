@@ -1,6 +1,6 @@
 import 'package:vibcat/data/bean/ai_model.dart';
 import 'package:vibcat/data/schema/ai_model_config.dart';
-import 'package:vibcat/service/ai_request.dart';
+import 'package:vibcat/service/ai/ai_request.dart';
 
 import '../../schema/chat_message.dart';
 import '../../schema/conversation.dart';

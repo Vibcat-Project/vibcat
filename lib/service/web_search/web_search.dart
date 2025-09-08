@@ -9,8 +9,8 @@ import 'package:vibcat/service/http.dart';
 import 'package:vibcat/util/log.dart';
 import 'package:vibcat/util/web_content_extractor.dart';
 
-import '../bean/web_search_args.dart';
-import '../data/bean/web_search_item.dart';
+import '../../bean/web_search_args.dart';
+import '../../data/bean/web_search_item.dart';
 
 part 'bing_web_search.dart';
 

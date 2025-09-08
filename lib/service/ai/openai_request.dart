@@ -6,10 +6,10 @@ import 'package:vibcat/data/schema/chat_message.dart';
 import 'package:vibcat/data/schema/ai_model_config.dart';
 import 'package:vibcat/enum/ai_provider_type.dart';
 import 'package:vibcat/enum/chat_message_type.dart';
-import 'package:vibcat/service/ai_request.dart';
+import 'package:vibcat/service/ai/ai_request.dart';
 
-import '../data/schema/conversation.dart';
-import '../global/models.dart';
+import '../../data/schema/conversation.dart';
+import '../../global/models.dart';
 
 class OpenAIRequestService extends AIRequestService {
   @override

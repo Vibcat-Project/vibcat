@@ -7,13 +7,13 @@ import 'package:vibcat/data/schema/ai_model_config.dart';
 import 'package:vibcat/data/schema/conversation.dart';
 import 'package:vibcat/enum/ai_provider_type.dart';
 import 'package:vibcat/global/models.dart';
-import 'package:vibcat/service/gemini_request.dart';
+import 'package:vibcat/service/ai/gemini_request.dart';
 import 'package:vibcat/service/http.dart';
-import 'package:vibcat/service/volcano_engine_request.dart';
+import 'package:vibcat/service/ai/volcano_engine_request.dart';
 import 'package:vibcat/util/file.dart';
 
-import '../bean/upload_file.dart';
-import '../enum/ai_think_type.dart';
+import '../../bean/upload_file.dart';
+import '../../enum/ai_think_type.dart';
 import 'openai_request.dart';
 
 abstract class AIRequestService {

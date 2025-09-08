@@ -1,10 +1,10 @@
 import 'dart:convert';
 
 import 'package:dio/dio.dart';
-import 'package:vibcat/service/openai_request.dart';
+import 'package:vibcat/service/ai/openai_request.dart';
 
-import '../data/schema/chat_message.dart';
-import '../enum/chat_message_type.dart';
+import '../../data/schema/chat_message.dart';
+import '../../enum/chat_message_type.dart';
 
 class GeminiRequestService extends OpenAIRequestService {
   GeminiRequestService({

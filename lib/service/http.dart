@@ -17,7 +17,7 @@ class HttpResponse<T> {
       statusCode != null && statusCode! >= 200 && statusCode! < 300;
 }
 
-/// 通用 Http 接口，方便未来替换 http 库
+/// 通用 Http 接口
 abstract class IHttpClient {
   Future<HttpResponse<T>> get<T>(
     String path, {

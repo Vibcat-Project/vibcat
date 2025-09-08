@@ -1,7 +1,7 @@
 import 'package:vibcat/bean/web_search_args.dart';
 import 'package:vibcat/enum/web_search_type.dart';
 import 'package:vibcat/global/store.dart';
-import 'package:vibcat/service/web_search.dart';
+import 'package:vibcat/service/web_search/web_search.dart';
 
 import '../../bean/web_search_item.dart';
 
