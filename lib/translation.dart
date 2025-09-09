@@ -51,6 +51,12 @@ class Translation extends Translations {
       'inputLink': '输入链接',
       'visitingWebsite': '正在访问链接',
       'webSearch': '联网',
+      'generatingKeywords': '正在生成关键词',
+      'searchingKeywords': '正在搜索关键词',
+      'tokenUsage': 'Token 用量',
+      'promptInput': 'Prompt 输入',
+      'aiOutput': 'AI 输出',
+      'aiThinking': 'AI 思考',
     },
     'en_US': {'appName': 'Vibcat', 'appSlogan': ''},
   };

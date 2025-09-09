@@ -1,20 +1,10 @@
-import 'dart:convert';
-
-import 'package:dio/dio.dart';
 import 'package:vibcat/service/ai/openai_request.dart';
 
+import '../../bean/chat_request.dart';
 import '../../data/bean/ai_model.dart';
-import '../../data/schema/chat_message.dart';
-import '../../enum/chat_message_type.dart';
 
 class VolcanoEngineRequestService extends OpenAIRequestService {
-  VolcanoEngineRequestService({
-    required super.config,
-    required super.model,
-    required super.conversation,
-    required super.history,
-    super.additionalParams,
-  });
+  VolcanoEngineRequestService(super.request);
 
   @override
   Future<List<AIModel>> getModelList() async {
@@ -68,62 +58,36 @@ class VolcanoEngineRequestService extends OpenAIRequestService {
   }
 
   @override
-  Stream<ChatMessage?> chatCompletions() async* {
-    try {
-      final res = await httpClient.post(
-        '${config.endPoint}/chat/completions',
-        body: await buildReqParams(),
-        headers: {'Authorization': 'Bearer ${config.apiKey}'},
-        responseType: ResponseType.stream,
+  Stream<ChatResponse> parseStreamData(Map<String, dynamic> data) async* {
+    final usage = data['usage'];
+    if (usage != null) {
+      yield ChatResponse(
+        type: ChatResponseType.usage,
+        tokenUsage: TokenUsage(
+          input: usage['prompt_tokens'] ?? 0,
+          output: usage['completion_tokens'] ?? 0,
+          reasoning:
+              usage['completion_tokens_details']?['reasoning_tokens'] ?? 0,
+        ),
       );
+    }
 
-      if (!res.isSuccess || res.data == null) {
-        yield null;
-        return;
-      }
+    if (data['choices']?.isEmpty ?? true) {
+      return;
+    }
 
-      final stream = transformStream(res.raw);
+    final delta = data['choices'][0]['delta'];
+    if (delta == null) return;
 
-      await for (final line in stream) {
-        if (line.startsWith('data: ')) {
-          print(line);
+    final content = delta['content'];
+    final reasoning = delta['reasoning_content'];
 
-          final jsonStr = line.substring(6).trim();
-          if (jsonStr == '[DONE]') break;
+    if (reasoning != null) {
+      yield ChatResponse(type: ChatResponseType.reasoning, reasoning: content);
+    }
 
-          final Map<String, dynamic> data = jsonDecode(jsonStr);
-          final resultMsg = ChatMessage()..type = ChatMessageType.text;
-
-          // 提取 Token Usage
-          final usage = data['usage'];
-          if (usage != null) {
-            yield ChatMessage()
-              ..type = ChatMessageType.usage
-              ..tokenOutput = usage['completion_tokens'] ?? 0
-              ..tokenInput = usage['prompt_tokens'] ?? 0
-              ..tokenReasoning =
-                  usage['completion_tokens_details']?['reasoning_tokens'] ?? 0;
-          }
-
-          if (data['choices']?.isEmpty ?? true) {
-            continue;
-          }
-
-          String? content = data['choices'][0]['delta']?['content'];
-          final reasoning = data['choices'][0]['delta']?['reasoning_content'];
-
-          if (reasoning != null) {
-            yield resultMsg..reasoning = reasoning;
-            continue;
-          }
-
-          if (content != null) {
-            yield resultMsg..content = content;
-          }
-        }
-      }
-    } catch (e) {
-      yield null;
+    if (content != null) {
+      yield ChatResponse(type: ChatResponseType.content, content: content);
     }
   }
 }

@@ -1,14 +1,18 @@
-import 'package:flutter/foundation.dart';
-import 'dart:io';
+import 'dart:developer' as developer;
 
-/// 控制台颜色 ANSI 转义序列
-class _LogColors {
-  static const reset = '\x1B[0m';
-  static const red = '\x1B[31m';
-  static const green = '\x1B[32m';
-  static const yellow = '\x1B[33m';
-  static const blue = '\x1B[34m';
-  static const cyan = '\x1B[36m';
+import 'package:flutter/foundation.dart';
+
+enum _LogLevel {
+  debug("🔍", "DEBUG"),
+  info('ℹ️', 'INFO'),
+  warning('⚠️', 'WARNING'),
+  success('✅', 'SUCCESS'),
+  error('❌', 'ERROR');
+
+  final String emoji;
+  final String upperName;
+
+  const _LogLevel(this.emoji, this.upperName);
 }
 
 /// 日志工具类
@@ -18,107 +22,55 @@ class LogUtil {
   static const _borderBottom =
       "╚═══════════════════════════════════════════════";
 
-  // 检测是否支持颜色输出
-  static bool get _supportsColor {
-    // 在真实设备或支持ANSI的终端中启用颜色
-    return !kIsWeb &&
-        (Platform.isIOS ||
-            Platform.isAndroid ||
-            Platform.isMacOS ||
-            Platform.isLinux) &&
-        stdout.hasTerminal;
+  static void _printer(String message, _LogLevel level) {
+    developer.log(message, name: 'VIBCAT_${level.upperName}');
   }
 
-  static void _print(String tag, String message, String color) {
-    if (!kDebugMode) return;
-
-    final time = DateTime.now().toIso8601String();
-    final useColor = _supportsColor;
-
-    // 根据环境决定是否使用颜色
-    final colorStart = useColor ? color : '';
-    final colorEnd = useColor ? _LogColors.reset : '';
-
-    final logHeader = "$colorStart[$time][$tag]$colorEnd";
-
-    // 分段打印，避免过长被省略
-    final chunks = <String>[];
-    for (var i = 0; i < message.length; i += _chunkSize) {
-      final end = (i + _chunkSize < message.length)
-          ? i + _chunkSize
-          : message.length;
-      chunks.add(message.substring(i, end));
-    }
-
-    debugPrint("$colorStart$_borderTop$colorEnd");
-    debugPrint(logHeader);
-    for (final chunk in chunks) {
-      debugPrint("$colorStart║ $chunk$colorEnd");
-    }
-    debugPrint("$colorStart$_borderBottom$colorEnd");
-  }
-
-  // 简化版本 - 适用于 Android Studio
-  static void _printSimple(String tag, String message, String emoji) {
+  static void _print(
+    _LogLevel level,
+    String message, {
+    bool preserveIndent = true,
+  }) {
     if (!kDebugMode) return;
 
     final time = DateTime.now().toString().substring(11, 19); // 只显示时间部分
-    final logHeader = "$emoji [$time][$tag]";
+    final logHeader = "${level.emoji} [$time][${level.upperName}]";
 
-    // 分段打印
-    final chunks = <String>[];
-    for (var i = 0; i < message.length; i += _chunkSize) {
-      final end = (i + _chunkSize < message.length)
-          ? i + _chunkSize
-          : message.length;
-      chunks.add(message.substring(i, end));
+    _printer(_borderTop, level);
+    _printer(logHeader, level);
+
+    // 按行拆分
+    final lines = message.split('\n');
+    for (final rawLine in lines) {
+      // 根据配置决定是否去掉缩进
+      final line = preserveIndent ? rawLine : rawLine.trimLeft();
+
+      if (line.isEmpty) {
+        // 空行仍然输出一行
+        // _printer("║", level);
+        continue;
+      }
+
+      // 按 chunk 拆分该行
+      for (var i = 0; i < line.length; i += _chunkSize) {
+        final end = (i + _chunkSize < line.length)
+            ? i + _chunkSize
+            : line.length;
+        final chunk = line.substring(i, end);
+        _printer("║ $chunk", level);
+      }
     }
 
-    debugPrint(_borderTop);
-    debugPrint(logHeader);
-    for (final chunk in chunks) {
-      debugPrint("║ $chunk");
-    }
-    debugPrint(_borderBottom);
+    _printer(_borderBottom, level);
   }
 
-  static void info(String message) {
-    if (_supportsColor) {
-      _print("INFO", message, _LogColors.blue);
-    } else {
-      _printSimple("INFO", message, "ℹ️");
-    }
-  }
+  static void info(String message) => _print(_LogLevel.info, message);
 
-  static void success(String message) {
-    if (_supportsColor) {
-      _print("SUCCESS", message, _LogColors.green);
-    } else {
-      _printSimple("SUCCESS", message, "✅");
-    }
-  }
+  static void success(String message) => _print(_LogLevel.success, message);
 
-  static void warning(String message) {
-    if (_supportsColor) {
-      _print("WARNING", message, _LogColors.yellow);
-    } else {
-      _printSimple("WARNING", message, "⚠️");
-    }
-  }
+  static void warning(String message) => _print(_LogLevel.warning, message);
 
-  static void error(String message) {
-    if (_supportsColor) {
-      _print("ERROR", message, _LogColors.red);
-    } else {
-      _printSimple("ERROR", message, "❌");
-    }
-  }
+  static void error(String message) => _print(_LogLevel.error, message);
 
-  static void debug(String message) {
-    if (_supportsColor) {
-      _print("DEBUG", message, _LogColors.cyan);
-    } else {
-      _printSimple("DEBUG", message, "🔍");
-    }
-  }
+  static void debug(String message) => _print(_LogLevel.debug, message);
 }

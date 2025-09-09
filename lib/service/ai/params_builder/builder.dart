@@ -1,0 +1,87 @@
+import 'package:vibcat/bean/chat_request.dart';
+import 'package:vibcat/service/ai/params_builder/thinking_strategy.dart';
+
+import '../../../bean/upload_file.dart';
+import '../../../data/schema/chat_message.dart';
+import '../../../util/file.dart';
+
+class ChatRequestParamsBuilder {
+  static Future<Map<String, dynamic>> build(
+    ChatRequest request, {
+    bool stream = true,
+    bool ignoreThinking = false,
+  }) async {
+    final baseParams = await _buildBaseParams(request, stream);
+    final thinkingParams = ignoreThinking ? {} : _buildThinkingParams(request);
+
+    return {...baseParams, ...thinkingParams, ...?request.additionalParams};
+  }
+
+  static Future<Map<String, dynamic>> _buildBaseParams(
+    ChatRequest request,
+    bool stream,
+  ) async {
+    return {
+      'model': request.model.id,
+      'messages': await _transformMessages(request.messages),
+      'stream': stream,
+      'stream_options': {'include_usage': true},
+    };
+  }
+
+  static Map<String, dynamic> _buildThinkingParams(ChatRequest request) {
+    final strategy = ThinkingStrategy.create(request.config.provider);
+    return strategy.buildParams(request);
+  }
+
+  static Future<List> _transformMessages(
+    List<ChatMessage> messages,
+  ) async => await Future.wait(
+    messages.map((item) async {
+      if (item.files.isNotEmpty) {
+        final contents = [
+          {'type': 'text', 'text': item.content},
+          ...await Future.wait(
+            item.files.map((e) async {
+              return switch (e) {
+                UploadImage() => {
+                  'type': 'image_url',
+                  'image_url': {
+                    'url': await FileUtil.fileToBase64DataUri(
+                      e.file,
+                      mimeType: e.mimeType,
+                    ),
+                  },
+                },
+                UploadFile() => {
+                  // 'type': 'file',
+                  // 'file': {
+                  //   'file_data': await FileUtil.fileToBase64DataUri(
+                  //     e.file,
+                  //     mimeType: e.mimeType,
+                  //   ),
+                  // },
+                  'type': 'text',
+                  'text':
+                      '${e.name}\n${await FileUtil.readFileAsString(e.file.path)}',
+                },
+                UploadLink() => {
+                  'type': 'text',
+                  'text': '${e.name}\n${e.file.path}',
+                },
+                UploadWebSearch() => {
+                  'type': 'text',
+                  'text': '${e.name}\n${e.file.path}',
+                },
+              };
+            }),
+          ),
+        ];
+
+        return {'role': item.role.name, 'content': contents};
+      } else {
+        return {'role': item.role.name, 'content': item.content};
+      }
+    }),
+  );
+}

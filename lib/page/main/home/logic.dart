@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:json5/json5.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:vibcat/bean/chat_request.dart';
 import 'package:vibcat/bean/upload_file.dart';
 import 'package:vibcat/component/select_model/logic.dart';
 import 'package:vibcat/component/select_model/view.dart';
@@ -371,24 +372,26 @@ class HomeLogic extends GetxController with GetSingleTickerProviderStateMixin {
     ChatMessage userMsg,
     ChatMessage responseMsg,
   ) async {
-    _updateSearchStatus(responseMsg, '正在生成关键词'.tr, '');
+    _updateSearchStatus(responseMsg, 'generatingKeywords'.tr, '');
 
     final res = await _repoNetAI.chatCompletionOnce(
-      config: state.currentAIModelConfig.value!,
-      model: state.currentAIModel.value!,
-      conversation: state.currentConversation.value!,
-      history: [
-        ChatMessage()
-          ..role = ChatRole.system
-          ..content = Prompts.webSearchKwRephraser,
-        ChatMessage()
-          ..role = ChatRole.user
-          ..content = userMsg.content,
-      ],
-      additionalParams: Prompts.webSearchKwRephraserJsonSchema,
+      ChatRequest(
+        config: state.currentAIModelConfig.value!,
+        model: state.currentAIModel.value!,
+        conversation: state.currentConversation.value!,
+        messages: [
+          ChatMessage()
+            ..role = ChatRole.system
+            ..content = Prompts.webSearchKwRephraser,
+          ChatMessage()
+            ..role = ChatRole.user
+            ..content = userMsg.content,
+        ],
+        additionalParams: Prompts.webSearchKwRephraserJsonSchema,
+      ),
     );
 
-    if (res == null) return null;
+    if (!res.isSuccess) return null;
 
     try {
       return Questions.fromJson(JSON5.parse(res.content!));
@@ -443,7 +446,7 @@ class HomeLogic extends GetxController with GetSingleTickerProviderStateMixin {
     ChatMessage userMsg,
     ChatMessage responseMsg,
   ) async {
-    _updateSearchStatus(responseMsg, '正在搜索关键词'.tr, question.query);
+    _updateSearchStatus(responseMsg, 'searchingKeywords'.tr, question.query);
 
     final kwResult = await _repoWebSearch.request(
       question.query,
@@ -545,10 +548,12 @@ class HomeLogic extends GetxController with GetSingleTickerProviderStateMixin {
   Future<void> _handleChatResponse(ChatMessage responseMsg) async {
     // 获取AI响应流
     final stream = _repoNetAI.chatCompletions(
-      config: state.currentAIModelConfig.value!,
-      model: state.currentAIModel.value!,
-      conversation: state.currentConversation.value!,
-      history: List.of(state.chatMessage)..remove(responseMsg),
+      ChatRequest(
+        config: state.currentAIModelConfig.value!,
+        model: state.currentAIModel.value!,
+        conversation: state.currentConversation.value!,
+        messages: List.of(state.chatMessage)..remove(responseMsg),
+      ),
     );
 
     // 创建响应消息
@@ -570,11 +575,11 @@ class HomeLogic extends GetxController with GetSingleTickerProviderStateMixin {
 
   /// 处理响应流
   Future<void> _processResponseStream(
-    Stream<dynamic> stream,
+    Stream<ChatResponse> stream,
     ChatMessage responseMsg,
   ) async {
     await for (final delta in stream) {
-      if (delta == null) {
+      if (delta.type == ChatResponseType.error) {
         await _handleStreamError(responseMsg);
         return;
       }
@@ -599,7 +604,7 @@ class HomeLogic extends GetxController with GetSingleTickerProviderStateMixin {
 
   /// 更新响应消息
   Future<void> _updateResponseMessage(
-    ChatMessage delta,
+    ChatResponse delta,
     ChatMessage responseMsg,
   ) async {
     final currentStatus = responseMsg.status;
@@ -608,15 +613,15 @@ class HomeLogic extends GetxController with GetSingleTickerProviderStateMixin {
       ..status = ChatMessageStatus.streaming
       ..content = (responseMsg.content ?? '') + (delta.content ?? '');
 
-    if (delta.type == ChatMessageType.usage) {
+    if (delta.type == ChatResponseType.usage) {
       responseMsg
-        ..tokenInput = delta.tokenInput
-        ..tokenOutput = delta.tokenOutput
-        ..tokenReasoning = delta.tokenReasoning;
+        ..tokenInput = delta.tokenUsage.input
+        ..tokenOutput = delta.tokenUsage.output
+        ..tokenReasoning = delta.tokenUsage.reasoning;
       return;
     }
 
-    if (delta.reasoning != null) {
+    if (delta.type == ChatResponseType.reasoning) {
       // 思考中
       _reasoningStartTime ??= DateTime.now();
 
@@ -800,31 +805,33 @@ class HomeLogic extends GetxController with GetSingleTickerProviderStateMixin {
     }
 
     final result = await _repoNetAI.chatCompletionOnce(
-      config: modelConfig!,
-      model: model!,
-      conversation: state.currentConversation.value!.copyWith(
-        thinkType: AIThinkType.none,
+      ChatRequest(
+        config: modelConfig!,
+        model: model!,
+        conversation: state.currentConversation.value!.copyWith(
+          thinkType: AIThinkType.none,
+        ),
+        messages: List.of([
+          ChatMessage()
+            ..role = ChatRole.system
+            ..content = Prompts.topicNaming,
+          ...state.chatMessage,
+        ]),
       ),
-      history: List.of([
-        ChatMessage()
-          ..role = ChatRole.system
-          ..content = Prompts.topicNaming,
-        ...state.chatMessage,
-      ]),
     );
-    if (result?.content == null) {
+    if (!result.isSuccess) {
       return;
     }
 
     await _repoDBApp.upsertConversation(
-      state.currentConversation.value!..title = result!.content!,
+      state.currentConversation.value!..title = result.content!,
     );
 
     // 更新 Token 用量信息
     await _repoDBApp.upsertAIModelConfig(
       modelConfig
-        ..tokenInput += result.tokenInput
-        ..tokenOutput += result.tokenOutput,
+        ..tokenInput += result.tokenUsage.input
+        ..tokenOutput += result.tokenUsage.output,
     );
 
     Get.find<DrawerLogic>().refreshList();
@@ -864,26 +871,26 @@ class HomeLogic extends GetxController with GetSingleTickerProviderStateMixin {
 
   void showAIMessageMore(ChatMessage msg) async {
     BlurBottomSheet.show(
-      'Token 用量',
+      'tokenUsage'.tr,
       Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           ListTile(
-            title: Text('Prompt 输入'),
+            title: Text('promptInput'.tr),
             trailing: Text(
               NumberUtil.formatNumber(msg.tokenInput),
               style: TextStyle(fontSize: 14),
             ),
           ),
           ListTile(
-            title: Text('AI 输出'),
+            title: Text('aiOutput'.tr),
             trailing: Text(
               NumberUtil.formatNumber(msg.tokenOutput),
               style: TextStyle(fontSize: 14),
             ),
           ),
           ListTile(
-            title: Text('AI 思考'),
+            title: Text('aiThinking'.tr),
             trailing: Text(
               NumberUtil.formatNumber(msg.tokenReasoning),
               style: TextStyle(fontSize: 14),
