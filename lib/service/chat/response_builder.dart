@@ -16,12 +16,12 @@ class ChatResponseBuilder {
     ..tokenOutput = _tokenUsage?.output ?? 0
     ..reasoningTimeConsuming = _reasoningTime;
 
-  ChatEvent? build(ChatResponse response) {
+  ChatEvent build(ChatResponse response) {
     return switch (response.type) {
       ChatResponseType.content => _handleContent(response.content!),
       ChatResponseType.reasoning => _handleReasoning(response.reasoning!),
       ChatResponseType.usage => _handleUsage(response.tokenUsage),
-      ChatResponseType.error => ChatEvent.error('AI响应错误'),
+      ChatResponseType.error => ChatEvent.error(response.content ?? ''),
     };
   }
 
@@ -35,8 +35,8 @@ class ChatResponseBuilder {
     return ChatEvent.reasoning(reasoning);
   }
 
-  ChatEvent? _handleUsage(TokenUsage usage) {
+  ChatEvent _handleUsage(TokenUsage usage) {
     _tokenUsage = usage;
-    return null; // Usage不需要触发UI事件
+    return ChatEvent.usage(usage);
   }
 }

@@ -42,6 +42,7 @@ class ChatResponse {
   final String? reasoning;
   final TokenUsage tokenUsage;
 
+  // 用于 chatCompletionOnce 的判断
   bool get isSuccess =>
       type != ChatResponseType.error && content?.isNotEmpty == true;
 

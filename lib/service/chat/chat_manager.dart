@@ -7,14 +7,18 @@ import 'package:vibcat/data/repository/database/app_db.dart';
 import 'package:vibcat/data/repository/net/ai.dart';
 import 'package:vibcat/data/repository/net/web_search.dart';
 import 'package:vibcat/data/schema/chat_message.dart';
+import 'package:vibcat/page/main/home/state.dart';
 import 'package:vibcat/service/chat/chat_event.dart';
 import 'package:vibcat/service/chat/response_builder.dart';
 
 import '../../bean/chat_request.dart';
 import '../../bean/upload_file.dart';
+import '../../data/bean/ai_model.dart';
 import '../../data/bean/questions.dart';
+import '../../enum/ai_think_type.dart';
 import '../../enum/chat_role.dart';
 import '../../global/prompts.dart';
+import '../../global/store.dart';
 import '../../util/web_content_extractor.dart';
 
 class ChatManager {
@@ -24,61 +28,129 @@ class ChatManager {
 
   final ChatMessage userMsg;
   final ChatMessage responseMsg;
-  final bool enableWebSearch;
-  final bool isTemporary;
+  final HomeState state;
+  final bool isRetry;
 
   ChatManager({
     required this.userMsg,
     required this.responseMsg,
-    this.enableWebSearch = false,
-    this.isTemporary = false,
+    required this.state,
+    this.isRetry = false,
   });
 
-  Stream<ChatEvent> sendMessage(ChatRequest request) async* {
-    try {
-      // 处理用户主动添加的链接
-      final links = userMsg.files.whereType<UploadLink>();
-      if (links.isNotEmpty) {
-        for (final link in links) {
-          yield ChatEvent.processing('visitingWebsite'.tr, desc: link.name);
+  Stream<ChatEvent> sendMessage() async* {
+    final request = ChatRequest(
+      config: state.currentAIModelConfig.value!,
+      model: state.currentAIModel.value!,
+      conversation: state.currentConversation.value!,
+      messages: List.of(state.chatMessage)..remove(responseMsg),
+    );
 
-          final result = await WebContentExtractor.extractContent(link.name);
-          link.file = File(result ?? '');
-        }
+    if (!isRetry) {
+      yield* _processWebSearch(request);
+    }
+
+    final responseBuilder = ChatResponseBuilder();
+    await for (final response in _aiService.chatCompletions(request)) {
+      final event = responseBuilder.build(response);
+      if (event is ErrorEvent) {
+        yield event;
+        return;
       }
 
-      // 处理在线搜索功能
-      if (enableWebSearch) {
-        yield ChatEvent.processing('generatingKeywords'.tr);
+      yield event;
+    }
 
-        final searchQuestions = await _generateSearchQuestions(request);
-        if (searchQuestions != null) {
-          yield* _executeSearchQuestions(searchQuestions);
-        }
+    // 保存到数据库
+    // if (!isTemporary) {
+    //   await _databaseService.upsertChatMessage(responseMsg);
+    // }
+
+    yield ChatEvent.completed();
+  }
+
+  Future<bool?> topicNaming() async {
+    if (state.isTemporaryChat.value) return null;
+    if (state.chatMessage.where((e) => e.role != ChatRole.system).length != 2) {
+      return null;
+    }
+
+    var modelConfig = state.currentAIModelConfig.value;
+    var model = state.currentAIModel.value;
+    if (GlobalStore.config.isValidTopicNamingModel) {
+      // 若存在默认配置，则直接使用
+      modelConfig = GlobalStore.config.topicNamingAIProvider;
+      model = AIModel(id: GlobalStore.config.topicNamingAIProviderModelId!);
+    }
+
+    final result = await _aiService.chatCompletionOnce(
+      ChatRequest(
+        config: modelConfig!,
+        model: model!,
+        conversation: state.currentConversation.value!.copyWith(
+          thinkType: AIThinkType.none,
+        ),
+        messages: List.of([
+          ChatMessage()
+            ..role = ChatRole.system
+            ..content = Prompts.topicNaming,
+          ...state.chatMessage,
+        ]),
+      ),
+    );
+    if (!result.isSuccess) {
+      return false;
+    }
+
+    await _databaseService.upsertConversation(
+      state.currentConversation.value!..title = result.content!,
+    );
+
+    // 更新 Token 用量信息
+    await _databaseService.upsertAIModelConfig(
+      modelConfig
+        ..tokenInput += result.tokenUsage.input
+        ..tokenOutput += result.tokenUsage.output,
+    );
+
+    return true;
+  }
+
+  /// 处理联网相关
+  Stream<ChatEvent> _processWebSearch(ChatRequest request) async* {
+    var needProcess = false;
+
+    // 处理用户主动添加的链接
+    final links = userMsg.files.whereType<UploadLink>();
+    if (links.isNotEmpty) {
+      needProcess = true;
+
+      for (final link in links) {
+        yield ChatEvent.processing('visitingWebsite'.tr, desc: link.name);
+
+        final result = await WebContentExtractor.extractContent(link.name);
+        link.file = File(result ?? '');
       }
+    }
 
-      // 保存到数据库
-      if (!isTemporary) {
-        await _databaseService.upsertChatMessage(userMsg);
+    // 处理在线搜索功能
+    if (state.enableWebSearch.value) {
+      needProcess = true;
+      yield ChatEvent.processing('generatingKeywords'.tr);
+
+      final searchQuestions = await _generateSearchQuestions(request);
+      if (searchQuestions != null) {
+        yield* _executeSearchQuestions(searchQuestions);
       }
+    }
 
-      // 发送到AI服务
-      // yield ChatEvent.aiResponding();
+    // 保存到数据库
+    if (!state.isTemporaryChat.value) {
+      await _databaseService.upsertChatMessage(userMsg);
+    }
 
-      final responseBuilder = ChatResponseBuilder();
-      await for (final response in _aiService.chatCompletions(request)) {
-        final event = responseBuilder.build(response);
-        if (event != null) yield event;
-      }
-
-      // 保存到数据库
-      if (!isTemporary) {
-        await _databaseService.upsertChatMessage(responseMsg);
-      }
-
-      yield ChatEvent.completed(responseBuilder.finalMessage);
-    } catch (e) {
-      yield ChatEvent.error(e.toString());
+    if (needProcess) {
+      yield ChatEvent.processing('waitingForAIResponse'.tr);
     }
   }
 
@@ -101,7 +173,7 @@ class ChatManager {
       ),
     );
 
-    if (res == null) return null;
+    if (!res.isSuccess) return null;
 
     try {
       return Questions.fromJson(JSON5.parse(res.content!));
@@ -144,29 +216,28 @@ class ChatManager {
 
   /// 处理网络搜索类型问题
   Stream<ChatEvent> _processWebSearchQuestion(Question question) async* {
-    final controller = StreamController<ChatEvent>();
+    yield ChatEvent.processing('searchingKeywords'.tr, desc: question.query);
 
-    controller.add(
-      ChatEvent.processing('searchingKeywords'.tr, desc: question.query),
-    );
+    await for (final event in Stream.multi((controller) async {
+      try {
+        final kwResult = await _webSearchService.request(
+          question.query,
+          onVisitUrl: (url) {
+            controller.add(
+              ChatEvent.processing('visitingWebsite'.tr, desc: url),
+            );
+          },
+        );
 
-    final kwResult = await _webSearchService.request(
-      question.query,
-      onVisitUrl: (url) {
-        // 在回调里不能 yield，但可以往 controller 里 add
-        controller.add(ChatEvent.processing('visitingWebsite'.tr, desc: url));
-      },
-    );
-
-    // 处理搜索结果
-    for (final value in kwResult) {
-      userMsg.files.add(UploadWebSearch(value.content, name: value.url));
+        // 处理搜索结果
+        for (final value in kwResult) {
+          userMsg.files.add(UploadWebSearch(value.content, name: value.url));
+        }
+      } finally {
+        controller.close();
+      }
+    })) {
+      yield event as ChatEvent;
     }
-
-    // 关闭 controller
-    await controller.close();
-
-    // 把 controller.stream 的事件传递出去
-    yield* controller.stream;
   }
 }

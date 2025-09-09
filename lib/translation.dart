@@ -53,6 +53,7 @@ class Translation extends Translations {
       'webSearch': '联网',
       'generatingKeywords': '正在生成关键词',
       'searchingKeywords': '正在搜索关键词',
+      'waitingForAIResponse': '正在等待 AI 响应',
       'tokenUsage': 'Token 用量',
       'promptInput': 'Prompt 输入',
       'aiOutput': 'AI 输出',

@@ -1,20 +1,15 @@
-import 'dart:io';
+import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
-import 'package:json5/json5.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:vibcat/bean/chat_request.dart';
 import 'package:vibcat/bean/upload_file.dart';
 import 'package:vibcat/component/select_model/logic.dart';
 import 'package:vibcat/component/select_model/view.dart';
 import 'package:vibcat/data/bean/ai_model.dart';
-import 'package:vibcat/data/bean/questions.dart';
 import 'package:vibcat/data/repository/database/app_db.dart';
-import 'package:vibcat/data/repository/net/ai.dart';
-import 'package:vibcat/data/repository/net/web_search.dart';
 import 'package:vibcat/data/schema/chat_message.dart';
 import 'package:vibcat/data/schema/conversation.dart';
 import 'package:vibcat/enum/add_options_type.dart';
@@ -22,15 +17,15 @@ import 'package:vibcat/enum/ai_think_type.dart';
 import 'package:vibcat/enum/chat_message_status.dart';
 import 'package:vibcat/enum/chat_message_type.dart';
 import 'package:vibcat/enum/chat_role.dart';
-import 'package:vibcat/global/prompts.dart';
 import 'package:vibcat/global/store.dart';
 import 'package:vibcat/page/main/drawer/logic.dart';
+import 'package:vibcat/service/chat/chat_event.dart';
+import 'package:vibcat/service/chat/chat_manager.dart';
 import 'package:vibcat/util/app.dart';
 import 'package:vibcat/util/dialog.dart';
 import 'package:vibcat/util/file_picker.dart';
 import 'package:vibcat/util/haptic.dart';
 import 'package:vibcat/util/number.dart';
-import 'package:vibcat/util/web_content_extractor.dart';
 import 'package:vibcat/widget/blur_bottom_sheet.dart';
 
 import '../../../widget/ripple_effect.dart';
@@ -45,8 +40,6 @@ class HomeLogic extends GetxController with GetSingleTickerProviderStateMixin {
   late AnimationController pulseController;
 
   final _repoDBApp = Get.find<AppDBRepository>();
-  final _repoNetAI = Get.find<AINetRepository>();
-  final _repoWebSearch = Get.find<WebSearchRepository>();
 
   // fontSize * lineHeight
   final double reasoningTextHeight = 14 * 1.4;
@@ -58,6 +51,7 @@ class HomeLogic extends GetxController with GetSingleTickerProviderStateMixin {
 
   bool _currentReasoningScrollFinished = true;
   DateTime? _reasoningStartTime;
+  StreamSubscription<ChatEvent>? _chatSubscription;
 
   @override
   void onInit() {
@@ -295,186 +289,87 @@ class HomeLogic extends GetxController with GetSingleTickerProviderStateMixin {
   Future<void> _performChat(ChatMessage userMsg, bool retry) async {
     state.isResponding.value = true;
 
-    try {
-      // 创建响应消息占位
-      final responseMsg = _createResponseMessage(
-        state.currentConversation.value!,
+    // 创建响应消息占位
+    final responseMsg = _createResponseMessage(
+      state.currentConversation.value!,
+    );
+    state.chatMessage.add(responseMsg);
+
+    final chatStream = ChatManager(
+      userMsg: userMsg,
+      responseMsg: responseMsg,
+      state: state,
+      isRetry: retry,
+    ).sendMessage();
+
+    _chatSubscription?.cancel();
+    _chatSubscription = chatStream.listen(
+      (event) => _handleChatEvent(event, responseMsg),
+      // onError: (error) => _finalizeResponse(responseMsg, false),
+      onDone: () => state.isResponding.value = false,
+    );
+  }
+
+  void _handleChatEvent(ChatEvent event, ChatMessage responseMessage) async {
+    final currentStatus = responseMessage.status;
+
+    switch (event) {
+      case ProcessingEvent(:final status, :final desc):
+        responseMessage.status = ChatMessageStatus.searching;
+        responseMessage.statusText.add(MapEntry(status, desc ?? ''));
+
+        state.chatMessage.refresh();
+        scrollReasoningToBottom(true);
+        return;
+      case ReasoningEvent(:final content):
+        // 思考中
+        _reasoningStartTime ??= DateTime.now();
+
+        responseMessage.status = ChatMessageStatus.reasoning;
+        responseMessage.reasoning = (responseMessage.reasoning ?? '') + content;
+
+        scrollReasoningToBottom();
+        break;
+      case ContentEvent(:final content):
+        responseMessage.status = ChatMessageStatus.streaming;
+        responseMessage.content = (responseMessage.content ?? '') + content;
+
+        // 思考完毕
+        if (_reasoningStartTime != null) {
+          responseMessage.reasoningTimeConsuming =
+              '${DateTime.now().difference(_reasoningStartTime!).inSeconds}s';
+          _reasoningStartTime = null;
+        }
+        break;
+      case UsageEvent(:final usage):
+        responseMessage
+          ..tokenInput = usage.input
+          ..tokenOutput = usage.output
+          ..tokenReasoning = usage.reasoning;
+        return;
+      case CompletedEvent():
+        _finalizeResponse(responseMessage, true);
+        break;
+      case ErrorEvent(:final message):
+        _finalizeResponse(responseMessage, false);
+        break;
+    }
+
+    // 切换状态的情况下，先重更新一下 padding，避免由于 padding 值的问题和渲染时序问题导致列表 item 位移
+    if (currentStatus != responseMessage.status) {
+      _adjustPaddingAndScroll(
+        isStreaming: true,
+        changeStatus: true,
+        onMeasureFinished: () {
+          state.chatMessage.refresh();
+          _adjustPaddingAndScroll(isStreaming: true);
+        },
       );
-      state.chatMessage.add(responseMsg);
-
-      if (!retry) {
-        // 处理用户主动添加的链接
-        await _processUserLinks(userMsg, responseMsg);
-
-        // 处理在线搜索功能
-        await _processWebSearch(userMsg, responseMsg);
-
-        // 保存用户消息到数据库
-        await _saveUserMessage(userMsg);
-      }
-
-      // 发送请求并处理响应
-      await _handleChatResponse(responseMsg);
-    } catch (e) {
-      // 处理异常。这里目前不会走，因为 try 块中的代码不会抛异常
-      _handleChatError();
-    } finally {
-      state.isResponding.value = false;
-    }
-  }
-
-  /// 处理用户主动添加的链接
-  Future<void> _processUserLinks(
-    ChatMessage userMsg,
-    ChatMessage responseMsg,
-  ) async {
-    final links = userMsg.files.whereType<UploadLink>();
-    if (links.isEmpty) return;
-
-    responseMsg.status = ChatMessageStatus.searching;
-
-    for (final link in links) {
-      await _processWebsiteLink(link, responseMsg);
-    }
-  }
-
-  /// 处理单个网站链接
-  Future<void> _processWebsiteLink(
-    UploadLink link,
-    ChatMessage responseMsg,
-  ) async {
-    _updateSearchStatus(responseMsg, 'visitingWebsite'.tr, link.name);
-
-    final result = await WebContentExtractor.extractContent(link.name);
-    link.file = File(result ?? '');
-  }
-
-  /// 处理在线搜索功能
-  Future<void> _processWebSearch(
-    ChatMessage userMsg,
-    ChatMessage responseMsg,
-  ) async {
-    if (!state.enableWebSearch.value) return;
-
-    responseMsg.status = ChatMessageStatus.searching;
-
-    final searchQuestions = await _generateSearchQuestions(
-      userMsg,
-      responseMsg,
-    );
-    if (searchQuestions != null) {
-      await _executeSearchQuestions(searchQuestions, userMsg, responseMsg);
-    }
-  }
-
-  /// 生成搜索问题
-  Future<Questions?> _generateSearchQuestions(
-    ChatMessage userMsg,
-    ChatMessage responseMsg,
-  ) async {
-    _updateSearchStatus(responseMsg, 'generatingKeywords'.tr, '');
-
-    final res = await _repoNetAI.chatCompletionOnce(
-      ChatRequest(
-        config: state.currentAIModelConfig.value!,
-        model: state.currentAIModel.value!,
-        conversation: state.currentConversation.value!,
-        messages: [
-          ChatMessage()
-            ..role = ChatRole.system
-            ..content = Prompts.webSearchKwRephraser,
-          ChatMessage()
-            ..role = ChatRole.user
-            ..content = userMsg.content,
-        ],
-        additionalParams: Prompts.webSearchKwRephraserJsonSchema,
-      ),
-    );
-
-    if (!res.isSuccess) return null;
-
-    try {
-      return Questions.fromJson(JSON5.parse(res.content!));
-    } catch (e) {
-      return null;
-    }
-  }
-
-  /// 执行搜索问题
-  Future<void> _executeSearchQuestions(
-    Questions questions,
-    ChatMessage userMsg,
-    ChatMessage responseMsg,
-  ) async {
-    for (final question in questions.questions) {
-      switch (question.type) {
-        case QuestionType.summarize:
-          await _processSummarizeQuestion(question, userMsg, responseMsg);
-          break;
-        case QuestionType.webSearch:
-          // 大模型的指令遵循可能不太理想，对于用户发送的信息中包含链接的情况，可能会被解析为搜索模式，而不是基于链接去回答，所以这里简单判断下，只要 links 不为空，就直接使用总结模式
-          if (question.links.isNotEmpty) {
-            await _processSummarizeQuestion(question, userMsg, responseMsg);
-          } else {
-            await _processWebSearchQuestion(question, userMsg, responseMsg);
-          }
-          break;
-        case QuestionType.notNeeded:
-          // Do nothing
-          break;
-      }
-    }
-  }
-
-  /// 处理总结类型问题
-  Future<void> _processSummarizeQuestion(
-    Question question,
-    ChatMessage userMsg,
-    ChatMessage responseMsg,
-  ) async {
-    for (final url in question.links) {
-      _updateSearchStatus(responseMsg, 'visitingWebsite'.tr, url);
-
-      final result = await WebContentExtractor.extractContent(url);
-      userMsg.files.add(UploadWebSearch(result ?? '', name: url));
-    }
-  }
-
-  /// 处理网络搜索类型问题
-  Future<void> _processWebSearchQuestion(
-    Question question,
-    ChatMessage userMsg,
-    ChatMessage responseMsg,
-  ) async {
-    _updateSearchStatus(responseMsg, 'searchingKeywords'.tr, question.query);
-
-    final kwResult = await _repoWebSearch.request(
-      question.query,
-      onVisitUrl: (url) =>
-          _updateSearchStatus(responseMsg, 'visitingWebsite'.tr, url),
-    );
-
-    for (final value in kwResult) {
-      userMsg.files.add(UploadWebSearch(value.content, name: value.url));
-    }
-  }
-
-  /// 更新搜索状态
-  void _updateSearchStatus(
-    ChatMessage responseMsg,
-    String status,
-    String detail,
-  ) {
-    responseMsg.statusText.add(MapEntry(status, detail));
-    state.chatMessage.refresh();
-    _adjustPaddingAndScroll();
-    scrollReasoningToBottom(true);
-  }
-
-  /// 保存用户消息到数据库
-  Future<void> _saveUserMessage(ChatMessage userMsg) async {
-    if (!state.isTemporaryChat.value) {
-      await _repoDBApp.upsertChatMessage(userMsg);
+    } else {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        state.chatMessage.refresh();
+        _adjustPaddingAndScroll(isStreaming: true);
+      });
     }
   }
 
@@ -528,10 +423,6 @@ class HomeLogic extends GetxController with GetSingleTickerProviderStateMixin {
       ..files = List.of(state.selectedFiles);
     // ..files = state.selectedFiles.map((e) => e.deepCopy()).toList();
 
-    // if (!state.isTemporaryChat.value) {
-    //   await _repoDBApp.upsertChatMessage(msg);
-    // }
-
     state
       ..selectedFiles.clear()
       ..chatMessage.add(msg);
@@ -544,26 +435,6 @@ class HomeLogic extends GetxController with GetSingleTickerProviderStateMixin {
     return msg;
   }
 
-  /// 处理聊天响应
-  Future<void> _handleChatResponse(ChatMessage responseMsg) async {
-    // 获取AI响应流
-    final stream = _repoNetAI.chatCompletions(
-      ChatRequest(
-        config: state.currentAIModelConfig.value!,
-        model: state.currentAIModel.value!,
-        conversation: state.currentConversation.value!,
-        messages: List.of(state.chatMessage)..remove(responseMsg),
-      ),
-    );
-
-    // 创建响应消息
-    // final responseMsg = _createResponseMessage(conv);
-    // state.chatMessage.add(responseMsg);
-
-    // 处理流式响应
-    await _processResponseStream(stream, responseMsg);
-  }
-
   /// 创建响应消息
   ChatMessage _createResponseMessage(Conversation conv) {
     return ChatMessage()
@@ -571,90 +442,6 @@ class HomeLogic extends GetxController with GetSingleTickerProviderStateMixin {
       ..role = ChatRole.assistant
       ..type = ChatMessageType.text
       ..status = ChatMessageStatus.sending;
-  }
-
-  /// 处理响应流
-  Future<void> _processResponseStream(
-    Stream<ChatResponse> stream,
-    ChatMessage responseMsg,
-  ) async {
-    await for (final delta in stream) {
-      if (delta.type == ChatResponseType.error) {
-        await _handleStreamError(responseMsg);
-        return;
-      }
-
-      await _updateResponseMessage(delta, responseMsg);
-    }
-
-    await _finalizeResponse(responseMsg);
-  }
-
-  /// 处理流错误
-  Future<void> _handleStreamError(ChatMessage responseMsg) async {
-    responseMsg.status = ChatMessageStatus.failed;
-    state.chatMessage.refresh();
-
-    if (!state.isTemporaryChat.value) {
-      await _repoDBApp.upsertChatMessage(responseMsg);
-    }
-
-    HapticUtil.error();
-  }
-
-  /// 更新响应消息
-  Future<void> _updateResponseMessage(
-    ChatResponse delta,
-    ChatMessage responseMsg,
-  ) async {
-    final currentStatus = responseMsg.status;
-
-    responseMsg
-      ..status = ChatMessageStatus.streaming
-      ..content = (responseMsg.content ?? '') + (delta.content ?? '');
-
-    if (delta.type == ChatResponseType.usage) {
-      responseMsg
-        ..tokenInput = delta.tokenUsage.input
-        ..tokenOutput = delta.tokenUsage.output
-        ..tokenReasoning = delta.tokenUsage.reasoning;
-      return;
-    }
-
-    if (delta.type == ChatResponseType.reasoning) {
-      // 思考中
-      _reasoningStartTime ??= DateTime.now();
-
-      responseMsg
-        ..reasoning = (responseMsg.reasoning ?? '') + delta.reasoning!
-        ..status = ChatMessageStatus.reasoning;
-
-      scrollReasoningToBottom();
-    } else {
-      // 思考完毕
-      if (_reasoningStartTime != null) {
-        responseMsg.reasoningTimeConsuming =
-            '${DateTime.now().difference(_reasoningStartTime!).inSeconds}s';
-        _reasoningStartTime = null;
-      }
-    }
-
-    // 切换状态的情况下，先重更新一下 padding，避免由于 padding 值的问题和渲染时序问题导致列表 item 位移
-    if (currentStatus != responseMsg.status) {
-      _adjustPaddingAndScroll(
-        isStreaming: true,
-        changeStatus: true,
-        onMeasureFinished: () {
-          state.chatMessage.refresh();
-          _adjustPaddingAndScroll(isStreaming: true);
-        },
-      );
-    } else {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        state.chatMessage.refresh();
-        _adjustPaddingAndScroll(isStreaming: true);
-      });
-    }
   }
 
   /// 调整底部 padding 并执行滚动
@@ -720,8 +507,10 @@ class HomeLogic extends GetxController with GetSingleTickerProviderStateMixin {
   }
 
   /// 完成响应
-  Future<void> _finalizeResponse(ChatMessage responseMsg) async {
-    responseMsg.status = ChatMessageStatus.success;
+  Future<void> _finalizeResponse(ChatMessage responseMsg, bool success) async {
+    responseMsg.status = success
+        ? ChatMessageStatus.success
+        : ChatMessageStatus.failed;
     state.chatMessage.refresh();
 
     if (!state.isTemporaryChat.value) {
@@ -735,16 +524,22 @@ class HomeLogic extends GetxController with GetSingleTickerProviderStateMixin {
         ..tokenOutput += responseMsg.tokenOutput,
     );
 
-    HapticUtil.success();
-    // rippleKey.currentState?.triggerRipple();
+    if (success) {
+      HapticUtil.success();
+      // rippleKey.currentState?.triggerRipple();
 
-    _topicNaming();
-  }
-
-  /// 处理聊天错误
-  void _handleChatError() {
-    HapticUtil.error();
-    // 可以在这里添加更多错误处理逻辑
+      // 话题命名（首轮对话完成才会执行）
+      final success = await ChatManager(
+        userMsg: ChatMessage(),
+        responseMsg: ChatMessage(),
+        state: state,
+      ).topicNaming();
+      if (success == true) {
+        Get.find<DrawerLogic>().refreshList();
+      }
+    } else {
+      HapticUtil.error();
+    }
   }
 
   /// 滚动思考内容到底部
@@ -787,54 +582,6 @@ class HomeLogic extends GetxController with GetSingleTickerProviderStateMixin {
           curve: Curves.easeOut,
         )
         .whenComplete(() => _currentReasoningScrollFinished = true);
-  }
-
-  /// 话题命名（首轮对话完成才会执行）
-  void _topicNaming() async {
-    if (state.isTemporaryChat.value) return;
-    if (state.chatMessage.where((e) => e.role != ChatRole.system).length != 2) {
-      return;
-    }
-
-    var modelConfig = state.currentAIModelConfig.value;
-    var model = state.currentAIModel.value;
-    if (GlobalStore.config.isValidTopicNamingModel) {
-      // 若存在默认配置，则直接使用
-      modelConfig = GlobalStore.config.topicNamingAIProvider;
-      model = AIModel(id: GlobalStore.config.topicNamingAIProviderModelId!);
-    }
-
-    final result = await _repoNetAI.chatCompletionOnce(
-      ChatRequest(
-        config: modelConfig!,
-        model: model!,
-        conversation: state.currentConversation.value!.copyWith(
-          thinkType: AIThinkType.none,
-        ),
-        messages: List.of([
-          ChatMessage()
-            ..role = ChatRole.system
-            ..content = Prompts.topicNaming,
-          ...state.chatMessage,
-        ]),
-      ),
-    );
-    if (!result.isSuccess) {
-      return;
-    }
-
-    await _repoDBApp.upsertConversation(
-      state.currentConversation.value!..title = result.content!,
-    );
-
-    // 更新 Token 用量信息
-    await _repoDBApp.upsertAIModelConfig(
-      modelConfig
-        ..tokenInput += result.tokenUsage.input
-        ..tokenOutput += result.tokenUsage.output,
-    );
-
-    Get.find<DrawerLogic>().refreshList();
   }
 
   void addFile(AddOptionsType type) async {

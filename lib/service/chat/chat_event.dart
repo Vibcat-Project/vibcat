@@ -1,17 +1,17 @@
-import '../../data/schema/chat_message.dart';
+import 'package:vibcat/bean/chat_request.dart';
 
 sealed class ChatEvent {
   const ChatEvent();
 
   factory ChatEvent.processing(String status, {String? desc}) = ProcessingEvent;
 
-  factory ChatEvent.aiResponding() = AIRespondingEvent;
-
   factory ChatEvent.reasoning(String content) = ReasoningEvent;
 
   factory ChatEvent.content(String content) = ContentEvent;
 
-  factory ChatEvent.completed(ChatMessage message) = CompletedEvent;
+  factory ChatEvent.usage(TokenUsage usage) = UsageEvent;
+
+  factory ChatEvent.completed() = CompletedEvent;
 
   factory ChatEvent.error(String message) = ErrorEvent;
 }
@@ -21,10 +21,6 @@ class ProcessingEvent extends ChatEvent {
   final String? desc;
 
   const ProcessingEvent(this.status, {this.desc});
-}
-
-class AIRespondingEvent extends ChatEvent {
-  const AIRespondingEvent();
 }
 
 class ReasoningEvent extends ChatEvent {
@@ -39,11 +35,13 @@ class ContentEvent extends ChatEvent {
   const ContentEvent(this.content);
 }
 
-class CompletedEvent extends ChatEvent {
-  final ChatMessage message;
+class UsageEvent extends ChatEvent {
+  final TokenUsage usage;
 
-  const CompletedEvent(this.message);
+  const UsageEvent(this.usage);
 }
+
+class CompletedEvent extends ChatEvent {}
 
 class ErrorEvent extends ChatEvent {
   final String message;
