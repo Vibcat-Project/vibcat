@@ -538,7 +538,10 @@ class AssistantMessageWidget extends StatelessWidget {
             color: GlobalStore.themeExt.border,
             borderRadius: BorderRadius.circular(15),
           ),
-          child: Text('dataLoadFail'.tr, style: const TextStyle(fontSize: 15)),
+          child: Text(
+            '${'dataLoadFail'.tr}${message.errorContent == null ? '' : '\n${message.errorContent}'}',
+            style: const TextStyle(fontSize: 15),
+          ),
         ),
         if (isLastMessage) _buildRetryButton(),
       ],

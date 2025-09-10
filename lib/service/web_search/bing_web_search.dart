@@ -31,7 +31,7 @@ class BingWebSearchService extends WebSearchService<BingWebSearchArgs> {
       var count = 0;
 
       for (final node in items) {
-        if (count >= 2) break;
+        if (count >= 1) break;
 
         final href = node.attributes['href'];
         if (href == null) continue;

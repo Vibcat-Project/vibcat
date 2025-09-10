@@ -142,7 +142,7 @@ class DioHttpClient implements IHttpClient {
       return HttpResponse<T>(
         statusCode: e.response?.statusCode,
         data: resData,
-        message: e.message,
+        message: resData is Map ? jsonEncode(resData) : resData?.toString(),
         raw: e.response,
       );
     } catch (e) {
@@ -197,20 +197,20 @@ class AppLogInterceptor extends Interceptor {
     );
     buffer.writeln("Message: ${err.message}");
 
-    dynamic resData;
-    if (err.response?.data is ResponseBody) {
-      try {
-        resData = await _readResponseBody(err.response!.data.stream);
-      } catch (_) {
-        resData = null;
-      }
-    } else {
-      resData = err.response?.data;
-    }
-
-    if (resData != null) {
-      buffer.writeln("Data: $resData");
-    }
+    // dynamic resData;
+    // if (err.response?.data is ResponseBody) {
+    //   try {
+    //     resData = await _readResponseBody(err.response!.data.stream);
+    //   } catch (_) {
+    //     resData = null;
+    //   }
+    // } else {
+    //   resData = err.response?.data;
+    // }
+    //
+    // if (resData != null) {
+    //   buffer.writeln("Data: $resData");
+    // }
 
     LogUtil.error(buffer.toString());
     super.onError(err, handler);

@@ -6,8 +6,14 @@ import 'package:vibcat/global/store.dart';
 import 'package:vibcat/route/route.dart';
 import 'package:vibcat/widget/blur_bottom_sheet.dart';
 
-import '../bean/option_bottom_sheet.dart';
 import 'app.dart';
+
+class OptionBottomSheetItem<T> {
+  final String text;
+  final T value;
+
+  OptionBottomSheetItem(this.text, this.value);
+}
 
 class DialogUtil {
   static void showSnackBar(String message) {

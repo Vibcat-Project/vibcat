@@ -5,13 +5,13 @@ class Prompts {
   """;
 
   static const webSearchKwRephraser = """
-  You are an AI question rephraser.  
-  Your task is to rewrite follow-up queries from a conversation into standalone queries that can be used for web search.  
+  You are an AI question rephraser and search keyword generator.  
+  Your task is to rewrite follow-up queries from a conversation into standalone queries that can be used for web search, and generate search-engine-friendly keywords.  
   
   ### Output Rules
   - Always output a single JSON object.  
   - Do NOT output text outside JSON.  
-  - Do NOT output JSON object with MARKDOWN.
+  - Do NOT output JSON object with MARKDOWN.  
   - JSON format MUST be:
   
   {
@@ -37,6 +37,11 @@ class Prompts {
      - If asking to summarize the link → set `"type": "summarize"`, set `"query": "summarize"`, and add the URL(s) in `links`.
   
   3. If it is a normal search query → set `"type": "websearch"` and put the rewritten standalone query into `query`.
+     - `query` must be suitable for Bing/Google search.
+     - Language of the keywords MUST follow the user’s query language.
+       - If user input is Chinese, output keywords in Chinese.
+       - If user input is English, output keywords in English.
+     - Keep them concise, avoid long sentences.
   
   4. If the follow-up contains multiple queries (e.g., comparing two companies), split into multiple objects in the `questions` list.
   

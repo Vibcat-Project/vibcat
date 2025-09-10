@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:vibcat/bean/upload_file.dart';
@@ -351,6 +350,7 @@ class HomeLogic extends GetxController with GetSingleTickerProviderStateMixin {
         _finalizeResponse(responseMessage, true);
         break;
       case ErrorEvent(:final message):
+        responseMessage.errorContent = message;
         _finalizeResponse(responseMessage, false);
         break;
     }
@@ -608,7 +608,7 @@ class HomeLogic extends GetxController with GetSingleTickerProviderStateMixin {
   }
 
   void copyAIMessage(ChatMessage msg) async {
-    await Clipboard.setData(ClipboardData(text: msg.content?.trim() ?? ''));
+    AppUtil.copyToClipboard(msg.content?.trim());
     DialogUtil.showSnackBar('contentHasCopied'.tr);
   }
 

@@ -190,7 +190,7 @@ class ChatManager {
           yield* _processSummarizeQuestion(question);
           break;
         case QuestionType.webSearch:
-          // 大模型的指令遵循可能不太理想，对于用户发送的信息中包含链接的情况，可能会被解析为搜索模式，而不是基于链接去回答，所以这里简单判断下，只要 links 不为空，就直接使用总结模式
+          // TODO 这里会同时存在 links 和 query，需要进一步处理
           if (question.links.isNotEmpty) {
             yield* _processSummarizeQuestion(question);
           } else {

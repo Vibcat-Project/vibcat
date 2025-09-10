@@ -47,8 +47,13 @@ const AppConfigSchema = CollectionSchema(
       name: r'topicNamingAIProviderModelId',
       type: IsarType.string,
     ),
-    r'webSearchType': PropertySchema(
+    r'webSearchApiKey': PropertySchema(
       id: 6,
+      name: r'webSearchApiKey',
+      type: IsarType.string,
+    ),
+    r'webSearchType': PropertySchema(
+      id: 7,
       name: r'webSearchType',
       type: IsarType.string,
       enumMap: _AppConfigwebSearchTypeEnumValueMap,
@@ -86,6 +91,7 @@ int _appConfigEstimateSize(
       bytesCount += 3 + value.length * 3;
     }
   }
+  bytesCount += 3 + object.webSearchApiKey.length * 3;
   bytesCount += 3 + object.webSearchType.name.length * 3;
   return bytesCount;
 }
@@ -102,7 +108,8 @@ void _appConfigSerialize(
   writer.writeBool(offsets[3], object.newConvUseLastModel);
   writer.writeLong(offsets[4], object.topicNamingAIProviderId);
   writer.writeString(offsets[5], object.topicNamingAIProviderModelId);
-  writer.writeString(offsets[6], object.webSearchType.name);
+  writer.writeString(offsets[6], object.webSearchApiKey);
+  writer.writeString(offsets[7], object.webSearchType.name);
 }
 
 AppConfig _appConfigDeserialize(
@@ -118,8 +125,9 @@ AppConfig _appConfigDeserialize(
   object.newConvUseLastModel = reader.readBool(offsets[3]);
   object.topicNamingAIProviderId = reader.readLongOrNull(offsets[4]);
   object.topicNamingAIProviderModelId = reader.readStringOrNull(offsets[5]);
+  object.webSearchApiKey = reader.readString(offsets[6]);
   object.webSearchType = _AppConfigwebSearchTypeValueEnumMap[
-          reader.readStringOrNull(offsets[6])] ??
+          reader.readStringOrNull(offsets[7])] ??
       WebSearchType.bing;
   return object;
 }
@@ -144,6 +152,8 @@ P _appConfigDeserializeProp<P>(
     case 5:
       return (reader.readStringOrNull(offset)) as P;
     case 6:
+      return (reader.readString(offset)) as P;
+    case 7:
       return (_AppConfigwebSearchTypeValueEnumMap[
               reader.readStringOrNull(offset)] ??
           WebSearchType.bing) as P;
@@ -784,6 +794,142 @@ extension AppConfigQueryFilter
   }
 
   QueryBuilder<AppConfig, AppConfig, QAfterFilterCondition>
+      webSearchApiKeyEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'webSearchApiKey',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AppConfig, AppConfig, QAfterFilterCondition>
+      webSearchApiKeyGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'webSearchApiKey',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AppConfig, AppConfig, QAfterFilterCondition>
+      webSearchApiKeyLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'webSearchApiKey',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AppConfig, AppConfig, QAfterFilterCondition>
+      webSearchApiKeyBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'webSearchApiKey',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AppConfig, AppConfig, QAfterFilterCondition>
+      webSearchApiKeyStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'webSearchApiKey',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AppConfig, AppConfig, QAfterFilterCondition>
+      webSearchApiKeyEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'webSearchApiKey',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AppConfig, AppConfig, QAfterFilterCondition>
+      webSearchApiKeyContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'webSearchApiKey',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AppConfig, AppConfig, QAfterFilterCondition>
+      webSearchApiKeyMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'webSearchApiKey',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AppConfig, AppConfig, QAfterFilterCondition>
+      webSearchApiKeyIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'webSearchApiKey',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<AppConfig, AppConfig, QAfterFilterCondition>
+      webSearchApiKeyIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'webSearchApiKey',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<AppConfig, AppConfig, QAfterFilterCondition>
       webSearchTypeEqualTo(
     WebSearchType value, {
     bool caseSensitive = true,
@@ -1008,6 +1154,18 @@ extension AppConfigQuerySortBy on QueryBuilder<AppConfig, AppConfig, QSortBy> {
     });
   }
 
+  QueryBuilder<AppConfig, AppConfig, QAfterSortBy> sortByWebSearchApiKey() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'webSearchApiKey', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AppConfig, AppConfig, QAfterSortBy> sortByWebSearchApiKeyDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'webSearchApiKey', Sort.desc);
+    });
+  }
+
   QueryBuilder<AppConfig, AppConfig, QAfterSortBy> sortByWebSearchType() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'webSearchType', Sort.asc);
@@ -1116,6 +1274,18 @@ extension AppConfigQuerySortThenBy
     });
   }
 
+  QueryBuilder<AppConfig, AppConfig, QAfterSortBy> thenByWebSearchApiKey() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'webSearchApiKey', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AppConfig, AppConfig, QAfterSortBy> thenByWebSearchApiKeyDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'webSearchApiKey', Sort.desc);
+    });
+  }
+
   QueryBuilder<AppConfig, AppConfig, QAfterSortBy> thenByWebSearchType() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'webSearchType', Sort.asc);
@@ -1170,6 +1340,14 @@ extension AppConfigQueryWhereDistinct
       distinctByTopicNamingAIProviderModelId({bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'topicNamingAIProviderModelId',
+          caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<AppConfig, AppConfig, QDistinct> distinctByWebSearchApiKey(
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'webSearchApiKey',
           caseSensitive: caseSensitive);
     });
   }
@@ -1229,6 +1407,12 @@ extension AppConfigQueryProperty
       topicNamingAIProviderModelIdProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'topicNamingAIProviderModelId');
+    });
+  }
+
+  QueryBuilder<AppConfig, String, QQueryOperations> webSearchApiKeyProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'webSearchApiKey');
     });
   }
 

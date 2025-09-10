@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:vibcat/page/model_settings/view.dart';
 import 'package:vibcat/page/settings/chat/view.dart';
 import 'package:vibcat/page/settings/other/view.dart';
+import 'package:vibcat/page/settings/web_search/view.dart';
 
 import '../page/main/view.dart';
 
@@ -51,12 +52,14 @@ class AppPage extends GetPage {
 class AppRoute {
   static const main = '/main';
   static const modelSettings = '/modelSettings';
+  static const webSearchSettings = '/webSearchSettings';
   static const chatSettings = '/chatSettings';
   static const otherSettings = '/otherSettings';
 
   static final List<GetPage> routes = [
     AppPage(name: main, page: () => MainPage()),
     AppPage(name: modelSettings, page: () => ModelSettingsPage()),
+    AppPage(name: webSearchSettings, page: () => WebSearchSettingsPage()),
     AppPage(name: chatSettings, page: () => ChatSettingsPage()),
     AppPage(name: otherSettings, page: () => OtherSettingsPage()),
   ];
@@ -82,6 +85,10 @@ class AppRoute {
 
   static void toModelSettings() {
     to(modelSettings);
+  }
+
+  static void toWebSearchSettings() {
+    to(webSearchSettings);
   }
 
   static void toChatSettings() {

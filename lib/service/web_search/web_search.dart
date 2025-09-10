@@ -1,10 +1,12 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math';
 import 'dart:ui' as ui;
 
 import 'package:html/dom.dart';
 import 'package:html/parser.dart' as html_parser;
 import 'package:vibcat/enum/web_search_type.dart';
+import 'package:vibcat/global/store.dart';
 import 'package:vibcat/service/http.dart';
 import 'package:vibcat/util/log.dart';
 import 'package:vibcat/util/web_content_extractor.dart';

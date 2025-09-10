@@ -83,10 +83,8 @@ class VolcanoEngineRequestService extends OpenAIRequestService {
     final reasoning = delta['reasoning_content'];
 
     if (reasoning != null) {
-      yield ChatResponse(type: ChatResponseType.reasoning, reasoning: content);
-    }
-
-    if (content != null) {
+      yield ChatResponse(type: ChatResponseType.reasoning, reasoning: reasoning);
+    } else if (content != null) {
       yield ChatResponse(type: ChatResponseType.content, content: content);
     }
   }

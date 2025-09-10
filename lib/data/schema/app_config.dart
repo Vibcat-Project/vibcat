@@ -60,6 +60,9 @@ class AppConfig {
   @Enumerated(EnumType.name)
   WebSearchType webSearchType = WebSearchType.bing;
 
+  // WebSearch API Key
+  String webSearchApiKey = "";
+
   void prepareForSave() {
     topicNamingAIProviderId = topicNamingAIProvider?.id;
     defaultConvAIProviderId = defaultConvAIProvider?.id;

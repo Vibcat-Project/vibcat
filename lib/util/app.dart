@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 
 class AppUtil {
@@ -15,5 +16,9 @@ class AppUtil {
       await Future.delayed(checkInterval);
     }
     // 键盘彻底关闭
+  }
+
+  static Future<void> copyToClipboard(String? content) async {
+    await Clipboard.setData(ClipboardData(text: content ?? ''));
   }
 }

@@ -29,33 +29,33 @@ class ChatSettingsPage extends StatelessWidget {
           backgroundColor: GlobalStore.themeExt.container,
           items: [
             SettingsPanelItem(
-              text: Text('话题命名模型'),
+              text: Text('modelTopicNaming'.tr),
               trailing: Text(
                 _limitText(
                       GlobalStore.config.topicNamingAIProviderModelId
                           ?.split('/')
                           .last,
                     ) ??
-                    '未设置',
+                    'unset'.tr,
                 style: TextStyle(fontSize: 14),
               ),
               onTap: () => logic.selectModel(0),
             ),
             SettingsPanelItem(
-              text: Text('默认对话模型'),
+              text: Text('modelDefaultConversation'.tr),
               trailing: Text(
                 _limitText(
                       GlobalStore.config.defaultConvAIProviderModelId
                           ?.split('/')
                           .last,
                     ) ??
-                    '未设置',
+                    'unset'.tr,
                 style: TextStyle(fontSize: 14),
               ),
               onTap: () => logic.selectModel(1),
             ),
             SettingsPanelItem(
-              text: Text('新对话使用上一次模型'),
+              text: Text('newConversationUseLastModel'.tr),
               trailing: Switch(
                 value: state.newConvUseLastModel.value,
                 onChanged: logic.onNewConvUseLastModelChanged,
