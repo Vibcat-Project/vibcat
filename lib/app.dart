@@ -12,8 +12,7 @@ import 'global/store.dart';
 
 Widget createApp() {
   if (Platform.isAndroid) {
-    // 以下两行设置 android 状态栏为透明的沉浸。写在组件渲染 runApp() 之后
-    // 是为了在渲染后进行 set 赋值，覆盖状态栏，写在渲染之前 MaterialApp 组件会覆盖掉这个值
+    // 设置 Android 状态栏为透明的沉浸
     SystemUiOverlayStyle systemUiOverlayStyle = const SystemUiOverlayStyle(
       statusBarColor: AppColor.transparent,
       statusBarBrightness: Brightness.light,
@@ -38,5 +37,10 @@ Widget createApp() {
     initialRoute: AppRoute.main,
     getPages: AppRoute.routes,
     defaultTransition: Transition.cupertino,
+    // 忽略系统字体缩放
+    builder: (context, child) => MediaQuery(
+      data: MediaQuery.of(context).copyWith(textScaler: TextScaler.noScaling),
+      child: child!,
+    ),
   );
 }
