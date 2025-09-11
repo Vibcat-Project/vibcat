@@ -39,12 +39,14 @@ abstract class AIRequestService {
   Future<ChatResponse> chatCompletionsOnce();
 
   /// [模板方法] - 流式返回聊天结果。
-  /// 此方法定义了流式请求的整体骨架，具体的解析逻辑由 _parseStreamData 实现。
+  /// 此方法定义了流式请求的整体骨架，具体的解析逻辑由 parseStreamData 实现。
   Stream<ChatResponse> chatCompletions() async* {
     try {
+      final reqBody = await ChatRequestParamsBuilder.build(request);
+
       final res = await httpClient.post(
         '${request.config.endPoint}/chat/completions',
-        body: await ChatRequestParamsBuilder.build(request),
+        body: reqBody,
         headers: {'Authorization': 'Bearer ${request.config.apiKey}'},
         responseType: ResponseType.stream,
       );

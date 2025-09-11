@@ -23,7 +23,7 @@ class BingWebSearchService extends WebSearchService<BingWebSearchArgs> {
     final results = <WebSearchItem>[];
 
     try {
-      // 解析 HTML
+      // 解析 Bing 搜索结果 HTML
       final Document doc = html_parser.parse(htmlContent);
 
       // 获取所有搜索结果标题
@@ -31,7 +31,7 @@ class BingWebSearchService extends WebSearchService<BingWebSearchArgs> {
       var count = 0;
 
       for (final node in items) {
-        if (count >= 1) break;
+        if (count >= 3) break;
 
         final href = node.attributes['href'];
         if (href == null) continue;
@@ -42,8 +42,17 @@ class BingWebSearchService extends WebSearchService<BingWebSearchArgs> {
         final content = await WebContentExtractor.extractContent(decodedUrl);
         if (content == null) continue;
 
+        var contentMd = html2md.convert(content);
+        if (contentMd.trim().isEmpty) {
+          contentMd = content;
+        }
+
         results.add(
-          WebSearchItem(title: node.text, url: decodedUrl, content: content),
+          WebSearchItem(
+            title: node.text,
+            url: decodedUrl,
+            content: contentMd.trim(),
+          ),
         );
 
         count++;

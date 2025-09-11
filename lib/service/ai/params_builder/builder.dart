@@ -1,5 +1,8 @@
 import 'package:vibcat/bean/chat_request.dart';
+import 'package:vibcat/ext/string.dart';
+import 'package:vibcat/global/prompts.dart';
 import 'package:vibcat/service/ai/params_builder/thinking_strategy.dart';
+import 'package:vibcat/util/json.dart';
 
 import '../../../bean/upload_file.dart';
 import '../../../data/schema/chat_message.dart';
@@ -34,17 +37,16 @@ class ChatRequestParamsBuilder {
     return strategy.buildParams(request);
   }
 
-  static Future<List> _transformMessages(
-    List<ChatMessage> messages,
-  ) async => await Future.wait(
-    messages.map((item) async {
-      if (item.files.isNotEmpty) {
-        final contents = [
-          {'type': 'text', 'text': item.content},
-          ...await Future.wait(
-            item.files.map((e) async {
-              return switch (e) {
-                UploadImage() => {
+  static Future<List> _transformMessages(List<ChatMessage> messages) async =>
+      await Future.wait(
+        messages.map((item) async {
+          if (item.files.isNotEmpty) {
+            final images = [];
+            final references = [];
+
+            await Future.wait(item.files.map((e) async {
+              if (e is UploadImage) {
+                images.add({
                   'type': 'image_url',
                   'image_url': {
                     'url': await FileUtil.fileToBase64DataUri(
@@ -52,36 +54,90 @@ class ChatRequestParamsBuilder {
                       mimeType: e.mimeType,
                     ),
                   },
-                },
-                UploadFile() => {
-                  // 'type': 'file',
-                  // 'file': {
-                  //   'file_data': await FileUtil.fileToBase64DataUri(
-                  //     e.file,
-                  //     mimeType: e.mimeType,
-                  //   ),
-                  // },
-                  'type': 'text',
-                  'text':
-                      '${e.name}\n${await FileUtil.readFileAsString(e.file.path)}',
-                },
-                UploadLink() => {
-                  'type': 'text',
-                  'text': '${e.name}\n${e.file.path}',
-                },
-                UploadWebSearch() => {
-                  'type': 'text',
-                  'text': '${e.name}\n${e.file.path}',
-                },
-              };
-            }),
-          ),
-        ];
+                });
+              } else {
+                final isFile = e is UploadFile;
 
-        return {'role': item.role.name, 'content': contents};
-      } else {
-        return {'role': item.role.name, 'content': item.content};
-      }
-    }),
-  );
+                references.add({
+                  'id': references.length + 1,
+                  'type': isFile ? 'file' : 'link',
+                  'content': isFile
+                      ? await FileUtil.readFileAsString(e.file.path)
+                      : e.file.path,
+                  isFile ? 'name' : 'url': e.name,
+                });
+              }
+            }));
+
+            final contents = [...images];
+
+            if (references.isNotEmpty) {
+              contents.add({
+                'type': 'text',
+                'text': Prompts.webSearchPrompt.renderTemplate({
+                  'USER_PROMPT': item.content ?? '',
+                  'REFERENCE_MATERIAL': JsonUtil.listToJson(references),
+                }),
+              });
+            } else {
+              contents.add({'type': 'text', 'text': item.content});
+            }
+
+            return {'role': item.role.name, 'content': contents};
+          } else {
+            return {'role': item.role.name, 'content': item.content};
+          }
+        }),
+      );
+
+  // static Future<List> _transformMessages(
+  //   List<ChatMessage> messages,
+  // ) async => await Future.wait(
+  //   messages.map((item) async {
+  //     if (item.files.isNotEmpty) {
+  //       final contents = [
+  //         {'type': 'text', 'text': item.content},
+  //         ...await Future.wait(
+  //           item.files.map((e) async {
+  //             return switch (e) {
+  //               UploadImage() => {
+  //                 'type': 'image_url',
+  //                 'image_url': {
+  //                   'url': await FileUtil.fileToBase64DataUri(
+  //                     e.file,
+  //                     mimeType: e.mimeType,
+  //                   ),
+  //                 },
+  //               },
+  //               UploadFile() => {
+  //                 // 'type': 'file',
+  //                 // 'file': {
+  //                 //   'file_data': await FileUtil.fileToBase64DataUri(
+  //                 //     e.file,
+  //                 //     mimeType: e.mimeType,
+  //                 //   ),
+  //                 // },
+  //                 'type': 'text',
+  //                 'text':
+  //                     '${e.name}\n${await FileUtil.readFileAsString(e.file.path)}',
+  //               },
+  //               UploadLink() => {
+  //                 'type': 'text',
+  //                 'text': '${e.name}\n${e.file.path}',
+  //               },
+  //               UploadWebSearch() => {
+  //                 'type': 'text',
+  //                 'text': '${e.name}\n${e.file.path}',
+  //               },
+  //             };
+  //           }),
+  //         ),
+  //       ];
+  //
+  //       return {'role': item.role.name, 'content': contents};
+  //     } else {
+  //       return {'role': item.role.name, 'content': item.content};
+  //     }
+  //   }),
+  // );
 }

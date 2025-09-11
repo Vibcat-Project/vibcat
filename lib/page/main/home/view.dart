@@ -625,8 +625,13 @@ class ReasoningContainer extends StatelessWidget {
         return const LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [Colors.transparent, Colors.black, Colors.transparent],
-          stops: [0, 0.5, 1],
+          colors: [
+            Colors.transparent,
+            Colors.black,
+            Colors.black,
+            Colors.transparent,
+          ],
+          stops: [0, 0.3, 0.7, 1],
         ).createShader(bounds);
       },
       blendMode: BlendMode.dstIn,

@@ -97,16 +97,34 @@ class SiliconFlowThinkingStrategy implements ThinkingStrategy {
 class GeminiThinkingStrategy implements ThinkingStrategy {
   @override
   Map<String, dynamic> buildParams(ChatRequest request) {
+    final thinkingBudget = _getThinkingBudget(request.conversation.thinkType);
+
     return {
       'extra_body': {
         'google': {
           'thinking_config': {
             'include_thoughts':
                 request.conversation.thinkType != AIThinkType.none,
+            'thinking_budget': thinkingBudget,
           },
         },
       },
     };
+  }
+
+  int _getThinkingBudget(AIThinkType thinkType) {
+    switch (thinkType) {
+      case AIThinkType.low:
+        return 1024;
+      case AIThinkType.medium:
+        return 8192;
+      case AIThinkType.high:
+        return 24576;
+      case AIThinkType.none:
+        return 0;
+      case AIThinkType.auto:
+        return -1;
+    }
   }
 }
 
