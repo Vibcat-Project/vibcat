@@ -1,0 +1,301 @@
+name: Flutter Multi-Platform Build
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+  workflow_dispatch:
+    inputs:
+      version_tag:
+        description: 'Version tag (e.g., v1.0.0)'
+        required: true
+        type: string
+
+env:
+  FLUTTER_VERSION: '3.35.x'
+  JAVA_VERSION: '17'
+  APP_DIR: '.' # 可配置应用目录，默认为根目录
+  CHANGELOG_FILE: 'CHANGELOG.md' # 可配置版本文件路径
+
+jobs:
+  # 读取配置信息
+  read-config:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      version_desc: ${{ steps.version.outputs.version_desc }}
+      prerelease: ${{ steps.version.outputs.prerelease }}
+      app_dir: ${{ steps.config.outputs.app_dir }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set app directory
+        id: config
+        run: |
+          if [ -f "pubspec.yaml" ]; then
+            echo "app_dir=." >> $GITHUB_OUTPUT
+          elif [ -d "${{ env.APP_DIR }}" ] && [ -f "${{ env.APP_DIR }}/pubspec.yaml" ]; then
+            echo "app_dir=${{ env.APP_DIR }}" >> $GITHUB_OUTPUT
+          else
+            # 尝试查找Flutter项目目录
+            APP_DIR=$(find . -name "pubspec.yaml" -type f | head -1 | xargs dirname)
+            echo "app_dir=${APP_DIR:-./app}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Read version info
+        id: version
+        run: |
+          VERSION="${{ github.event.inputs.version_tag || github.ref_name }}"
+          VERSION_DESC=""
+          PRERELEASE="false"
+          
+          # 优先级1: 使用CHANGELOG.md
+          if [ -f "${{ env.CHANGELOG_FILE }}" ]; then
+            echo "Using changelog file: ${{ env.CHANGELOG_FILE }}"
+          
+            # 提取最新版本的变更日志
+            # 查找形如 ## [1.0.0] - 2023-01-01 的标题行
+            LATEST_SECTION=$(awk '/^## \[.*\]/ {if(found) exit; found=1; start=NR} found && /^## \[.*\]/ && NR>start {exit} found {print}' "${{ env.CHANGELOG_FILE }}")
+          
+            if [ -n "$LATEST_SECTION" ]; then
+              # 提取版本号（去掉方括号）
+              CHANGELOG_VERSION=$(echo "$LATEST_SECTION" | head -1 | sed -n 's/^## \[\([^]]*\)\].*/\1/p')
+          
+              # 如果changelog中的版本与当前tag匹配，使用changelog内容
+              if [ "$CHANGELOG_VERSION" = "${VERSION#v}" ]; then
+                VERSION_DESC=$(echo "$LATEST_SECTION" | tail -n +2 | head -100)
+              else
+                VERSION_DESC="Release $VERSION"
+              fi
+          
+              # 检查是否为预发布版本
+              if echo "$VERSION" | grep -qE "(alpha|beta|rc|pre)"; then
+                PRERELEASE="true"
+              fi
+            else
+              VERSION_DESC="Release $VERSION"
+            fi
+          
+          # 优先级2: 使用JSON版本文件
+          elif [ -f "${{ env.VERSION_FILE }}" ]; then
+            echo "Using version file: ${{ env.VERSION_FILE }}"
+            VERSION=$(cat ${{ env.VERSION_FILE }} | jq -r '.version // "Unknown"')
+            VERSION_DESC=$(cat ${{ env.VERSION_FILE }} | jq -r '.version_desc // "No description"')
+            PRERELEASE=$(cat ${{ env.VERSION_FILE }} | jq -r '.prerelease // false')
+          
+          # 优先级3: 从git tag获取
+          else
+            echo "Using git tag information"
+            VERSION_DESC="Release $VERSION"
+            if echo "$VERSION" | grep -qE "(alpha|beta|rc|pre)"; then
+              PRERELEASE="true"
+            fi
+          fi
+          
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "version_desc<<EOF" >> $GITHUB_OUTPUT
+          echo "$VERSION_DESC" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+          echo "prerelease=$PRERELEASE" >> $GITHUB_OUTPUT
+
+  # macOS, iOS, Android 构建
+  build-mobile-desktop:
+    needs: read-config
+    runs-on: macos-latest
+    permissions:
+      contents: write
+    strategy:
+      matrix:
+        include:
+          - platform: android
+            build_cmd: flutter build apk --release --split-per-abi
+            artifact_path: build/app/outputs/flutter-apk/*.apk
+          - platform: ios
+            build_cmd: flutter build ios --release --no-codesign
+            artifact_path: build/ios/iphoneos/ios_no_sign.ipa
+          - platform: macos
+            build_cmd: flutter_distributor package --platform macos --targets dmg,zip --skip-clean
+            artifact_path: build/dist/*/*
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Android Keystore (Android only)
+        if: matrix.platform == 'android' && vars.ANDROID_SIGNING == 'true'
+        id: android_keystore
+        uses: timheuer/base64-to-file@v1.2
+        with:
+          fileName: keystore.jks
+          encodedString: ${{ secrets.KEYSTORE_BASE64 }}
+
+      - name: Create Android key.properties (Android only)
+        if: matrix.platform == 'android' && vars.ANDROID_SIGNING == 'true'
+        run: |
+          mkdir -p ${{ needs.read-config.outputs.app_dir }}/android
+          cat > ${{ needs.read-config.outputs.app_dir }}/android/key.properties << EOF
+          storeFile=${{ steps.android_keystore.outputs.filePath }}
+          storePassword=${{ secrets.STORE_PASSWORD }}
+          keyPassword=${{ secrets.KEY_PASSWORD }}
+          keyAlias=${{ secrets.KEY_ALIAS }}
+          EOF
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: 'gradle'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+
+      - name: Enable Flutter Desktop (macOS only)
+        if: matrix.platform == 'macos'
+        run: flutter config --enable-macos-desktop
+
+      - name: Install dependencies
+        run: |
+          cd ${{ needs.read-config.outputs.app_dir }}
+          flutter pub get
+
+      - name: Install additional tools
+        run: |
+          if [ "${{ matrix.platform }}" == "macos" ]; then
+            npm install -g appdmg
+            dart pub global activate flutter_distributor
+          fi
+
+      - name: Build ${{ matrix.platform }}
+        run: |
+          cd ${{ needs.read-config.outputs.app_dir }}
+          ${{ matrix.build_cmd }}
+
+      - name: Create IPA (iOS only)
+        if: matrix.platform == 'ios'
+        run: |
+          cd ${{ needs.read-config.outputs.app_dir }}
+          mkdir -p build/ios/iphoneos/Payload
+          cp -R build/ios/iphoneos/Runner.app build/ios/iphoneos/Payload/Runner.app
+          cd build/ios/iphoneos/
+          zip -q -r ios_no_sign.ipa Payload
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.platform }}
+          path: ${{ needs.read-config.outputs.app_dir }}/${{ matrix.artifact_path }}
+
+  # Linux 构建
+  build-linux:
+    needs: read-config
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+
+      - name: Install Linux dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev
+          # 可选：如果项目需要mpv
+          if [ "${{ vars.INSTALL_MPV }}" == "true" ]; then
+            sudo apt-get install -y libmpv-dev mpv
+          fi
+
+      - name: Enable Flutter Desktop
+        run: flutter config --enable-linux-desktop
+
+      - name: Install dependencies
+        run: |
+          cd ${{ needs.read-config.outputs.app_dir }}
+          flutter pub get
+
+      - name: Install flutter_distributor
+        run: dart pub global activate flutter_distributor
+
+      - name: Build Linux
+        run: |
+          cd ${{ needs.read-config.outputs.app_dir }}
+          flutter_distributor package --platform linux --targets deb,zip --skip-clean
+
+      - name: Upload Linux Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux
+          path: |
+            ${{ needs.read-config.outputs.app_dir }}/build/dist/*/*.deb
+            ${{ needs.read-config.outputs.app_dir }}/build/dist/*/*.zip
+
+  # Windows 构建
+  build-windows:
+    needs: read-config
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+
+      - name: Enable Flutter Desktop
+        run: flutter config --enable-windows-desktop
+
+      - name: Install dependencies
+        run: |
+          cd ${{ needs.read-config.outputs.app_dir }}
+          flutter pub get
+
+      - name: Install flutter_distributor
+        run: dart pub global activate flutter_distributor
+
+      - name: Build Windows
+        run: |
+          cd ${{ needs.read-config.outputs.app_dir }}
+          flutter_distributor package --platform windows --targets msix,zip --skip-clean
+
+      - name: Upload Windows Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows
+          path: |
+            ${{ needs.read-config.outputs.app_dir }}/build/dist/*/*.msix
+            ${{ needs.read-config.outputs.app_dir }}/build/dist/*/*.zip
+
+  # 创建Release
+  create-release:
+    needs: [ read-config, build-mobile-desktop, build-linux, build-windows ]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          name: ${{ needs.read-config.outputs.version }}
+          body: ${{ needs.read-config.outputs.version_desc }}
+          prerelease: ${{ needs.read-config.outputs.prerelease == 'true' }}
+          tag_name: ${{ github.event.inputs.version_tag || github.ref_name }}
+          files: |
+            android/*.apk
+            ios/*.ipa
+            macos/*
+            linux/*
+            windows/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
