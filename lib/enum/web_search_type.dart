@@ -4,11 +4,11 @@ enum WebSearchType {
     endPoint: 'https://www.bing.com/search?q=',
     requiredAPIKey: false,
   ),
-  // google(
-  //   plainText: 'Google',
-  //   endPoint: 'https://www.google.com/search?q=',
-  //   requiredAPIKey: false,
-  // ),
+  google(
+    plainText: 'Google',
+    endPoint: 'https://www.google.com/search?q=',
+    requiredAPIKey: false,
+  ),
   tavily(
     plainText: 'Tavily',
     endPoint: 'https://api.tavily.com/search',

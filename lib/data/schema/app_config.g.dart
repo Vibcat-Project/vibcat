@@ -164,10 +164,12 @@ P _appConfigDeserializeProp<P>(
 
 const _AppConfigwebSearchTypeEnumValueMap = {
   r'bing': r'bing',
+  r'google': r'google',
   r'tavily': r'tavily',
 };
 const _AppConfigwebSearchTypeValueEnumMap = {
   r'bing': WebSearchType.bing,
+  r'google': WebSearchType.google,
   r'tavily': WebSearchType.tavily,
 };
 

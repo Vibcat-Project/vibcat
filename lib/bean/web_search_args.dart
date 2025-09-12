@@ -9,6 +9,13 @@ final class BingWebSearchArgs implements WebSearchArgs {
   const BingWebSearchArgs({required this.kw});
 }
 
+final class GoogleWebSearchArgs implements WebSearchArgs {
+  @override
+  final String kw;
+
+  const GoogleWebSearchArgs({required this.kw});
+}
+
 final class TavilyWebSearchArgs implements WebSearchArgs {
   @override
   final String kw;

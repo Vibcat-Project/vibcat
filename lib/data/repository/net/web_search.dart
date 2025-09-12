@@ -18,6 +18,9 @@ class WebSearchRepository {
       case WebSearchType.bing:
         args = BingWebSearchArgs(kw: kw);
         break;
+      case WebSearchType.google:
+        args = GoogleWebSearchArgs(kw: kw);
+        break;
       case WebSearchType.tavily:
         args = TavilyWebSearchArgs(kw: kw);
         break;

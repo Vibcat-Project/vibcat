@@ -31,16 +31,16 @@ class BingWebSearchService extends WebSearchService<BingWebSearchArgs> {
       var count = 0;
 
       for (final node in items) {
-        if (count >= 3) break;
+        if (count >= 2) break;
 
         final href = node.attributes['href'];
-        if (href == null) continue;
+        if (href == null || href.trim().isEmpty) continue;
 
         final decodedUrl = _decodeBingUrl(href);
 
         onVisitUrl?.call(node.text);
         final content = await WebContentExtractor.extractContent(decodedUrl);
-        if (content == null) continue;
+        if (content == null || content.trim().isEmpty) continue;
 
         var contentMd = html2md.convert(content);
         if (contentMd.trim().isEmpty) {

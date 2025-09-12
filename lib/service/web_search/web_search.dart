@@ -10,11 +10,13 @@ import 'package:vibcat/global/store.dart';
 import 'package:vibcat/service/http.dart';
 import 'package:vibcat/util/log.dart';
 import 'package:vibcat/util/web_content_extractor.dart';
+import 'package:vibcat/bean/web_search_args.dart';
 
-import '../../bean/web_search_args.dart';
 import '../../data/bean/web_search_item.dart';
 
 part 'bing_web_search.dart';
+
+part 'google_web_search.dart';
 
 part 'tavily_web_search.dart';
 
@@ -36,6 +38,10 @@ class WebSearchServiceFactory {
     OnVisitUrl? onVisitUrl,
   }) => switch (args) {
     BingWebSearchArgs a => BingWebSearchService._(a, onVisitUrl: onVisitUrl),
+    GoogleWebSearchArgs a => GoogleWebSearchService._(
+      a,
+      onVisitUrl: onVisitUrl,
+    ),
     TavilyWebSearchArgs a => TavilyWebSearchService._(
       a,
       onVisitUrl: onVisitUrl,
