@@ -13,7 +13,7 @@ on:
 
 env:
   FLUTTER_VERSION: '3.35.x'
-  JAVA_VERSION: '17'
+  JAVA_VERSION: '11'
   APP_DIR: '.' # 可配置应用目录，默认为根目录
   CHANGELOG_FILE: 'CHANGELOG.md' # 可配置版本文件路径
 
@@ -117,7 +117,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Setup Android Keystore (Android only)
-        if: matrix.platform == 'android' && vars.ANDROID_SIGNING == 'true'
+        if: matrix.platform == 'android'
         id: android_keystore
         uses: timheuer/base64-to-file@v1.2
         with:
@@ -125,7 +125,7 @@ jobs:
           encodedString: ${{ secrets.KEYSTORE_BASE64 }}
 
       - name: Create Android key.properties (Android only)
-        if: matrix.platform == 'android' && vars.ANDROID_SIGNING == 'true'
+        if: matrix.platform == 'android'
         run: |
           mkdir -p ${{ needs.read-config.outputs.app_dir }}/android
           cat > ${{ needs.read-config.outputs.app_dir }}/android/key.properties << EOF
@@ -329,7 +329,6 @@ jobs:
 
 #配置仓库变量和密钥
 #  Repository Variables (可选配置)
-#  ANDROID_SIGNING=true          # 是否启用Android签名 (true/false)
 #  INSTALL_MPV=true              # Linux构建是否安装MPV (true/false)
 #
 #  Repository Secrets (Android签名需要)
