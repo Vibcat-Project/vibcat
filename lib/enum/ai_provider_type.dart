@@ -1,6 +1,6 @@
 import 'package:vibcat/global/images.dart';
 
-// Dart 的 enum 不能使用 GetX 的国际化，因为 enum 的字段值属于常量
+/// 添加新服务商后，请务必执行一次 “dart run build_runner build” 命令，用于更新 Isar 自动生成的代码文件
 enum AIProviderType {
   // OpenAI 通用协议，可用于 OpenAI, Groq, OpenRouter 等
   openAI(
@@ -62,6 +62,13 @@ enum AIProviderType {
     endPoint: 'http://localhost:11434/v1',
     icon: AppImage.providerOllama,
     customEndPoint: true,
+    compatibleOpenAI: true,
+  ),
+  bailian(
+    plainName: '阿里云百炼',
+    endPoint: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+    icon: AppImage.providerBailian,
+    customEndPoint: false,
     compatibleOpenAI: true,
   );
 

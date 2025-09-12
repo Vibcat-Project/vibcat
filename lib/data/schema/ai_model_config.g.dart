@@ -185,6 +185,7 @@ const _AIModelConfigproviderEnumValueMap = {
   r'openRouter': r'openRouter',
   r'volcanoEngine': r'volcanoEngine',
   r'ollama': r'ollama',
+  r'bailian': r'bailian',
 };
 const _AIModelConfigproviderValueEnumMap = {
   r'openAI': AIProviderType.openAI,
@@ -195,6 +196,7 @@ const _AIModelConfigproviderValueEnumMap = {
   r'openRouter': AIProviderType.openRouter,
   r'volcanoEngine': AIProviderType.volcanoEngine,
   r'ollama': AIProviderType.ollama,
+  r'bailian': AIProviderType.bailian,
 };
 
 Id _aIModelConfigGetId(AIModelConfig object) {

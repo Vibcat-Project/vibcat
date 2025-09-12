@@ -14,6 +14,7 @@ class AppImage {
   static const providerGroq = '$providerPath/groq.svg';
   static const providerOpenRouter = '$providerPath/openRouter.png';
   static const providerOllama = '$providerPath/ollama.png';
+  static const providerBailian = '$providerPath/bailian.svg';
 
   static const emojiPeekingEyes = '$path/emoji_peeking_eyes.svg';
 }

@@ -27,7 +27,8 @@ abstract class AIRequestService {
         AIProviderType.siliconFlow ||
         AIProviderType.groq ||
         AIProviderType.openRouter ||
-        AIProviderType.ollama => OpenAIRequestService(request),
+        AIProviderType.ollama ||
+        AIProviderType.bailian => OpenAIRequestService(request),
         AIProviderType.gemini => GeminiRequestService(request),
         AIProviderType.volcanoEngine => VolcanoEngineRequestService(request),
       };

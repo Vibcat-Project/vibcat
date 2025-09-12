@@ -22,6 +22,8 @@ abstract class ThinkingStrategy {
         return GeminiThinkingStrategy();
       case AIProviderType.volcanoEngine:
         return VolcanoEngineThinkingStrategy();
+      case AIProviderType.bailian:
+        return BailianThinkingStrategy();
     }
   }
 }
@@ -144,5 +146,32 @@ class VolcanoEngineThinkingStrategy implements ThinkingStrategy {
     if (thinkType == AIThinkType.none) return 'disabled';
     if (thinkType == AIThinkType.auto) return 'auto';
     return 'enabled';
+  }
+}
+
+class BailianThinkingStrategy implements ThinkingStrategy {
+  @override
+  Map<String, dynamic> buildParams(ChatRequest request) {
+    final thinkingBudget = _getThinkingBudget(request.conversation.thinkType);
+
+    return {
+      'extra_body': {
+        'enable_thinking': request.conversation.thinkType != AIThinkType.none,
+        'thinking_budget': thinkingBudget,
+      },
+    };
+  }
+
+  int _getThinkingBudget(AIThinkType thinkType) {
+    switch (thinkType) {
+      case AIThinkType.low:
+        return 128;
+      case AIThinkType.medium:
+        return 16320;
+      case AIThinkType.high:
+        return 32768;
+      default:
+        return 4096;
+    }
   }
 }
