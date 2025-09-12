@@ -172,8 +172,7 @@ jobs:
         with:
           name: ${{ matrix.platform }}
           path: |
-            ${{ needs.read-config.outputs.app_dir }}/build/app/outputs/flutter-apk/*.apk
-            ${{ needs.read-config.outputs.app_dir }}/build/ios/iphoneos/*.ipa
+            ${{ needs.read-config.outputs.app_dir }}/${{ matrix.artifact_path }}
 
   # macOS 构建
   build-macos:
