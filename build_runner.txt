@@ -1,2 +1,2 @@
 dart run build_runner build
-dart run flutter_launcher_icons:generate
+dart run flutter_launcher_icons

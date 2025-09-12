@@ -44,11 +44,11 @@ dependencies:
   # 代码高亮
   flutter_highlight: ^0.7.0
   # Markdown
-  markdown_widget:
-    path: ../markdown_widget
 #  markdown_widget:
-#    git:
-#      url: https://github.com/Vibcat-Project/markdown_widget.git
+#    path: ../markdown_widget
+  markdown_widget:
+    git:
+      url: https://github.com/Vibcat-Project/markdown_widget.git
   flutter_svg: ^2.2.0
   path_provider: ^2.1.5
   isar: *isar_version
@@ -97,8 +97,16 @@ flutter_launcher_icons:
   ios: true
   image_path: "assets/icon/icon.png"
   min_sdk_android: 21 # android min sdk min:16, default 21
+  web:
+    generate: true
+    image_path: "path/to/image.png"
+  windows:
+    generate: true
+    image_path: "path/to/image.png"
+    icon_size: 48 # min:48, max:256, default: 48
   macos:
     generate: true
+    image_path: "path/to/image.png"
 
 # The following section is specific to Flutter packages.
 flutter:

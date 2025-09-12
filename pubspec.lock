@@ -755,9 +755,11 @@ packages:
   markdown_widget:
     dependency: "direct main"
     description:
-      path: "../markdown_widget"
-      relative: true
-    source: path
+      path: "."
+      ref: HEAD
+      resolved-ref: ff5165c378308aabbcfb952908fc20e8b4c53db5
+      url: "https://github.com/Vibcat-Project/markdown_widget.git"
+    source: git
     version: "2.3.2+8"
   matcher:
     dependency: transitive

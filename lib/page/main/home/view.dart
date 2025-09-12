@@ -196,7 +196,11 @@ class HomeComponent extends StatelessWidget {
   Widget _buildEmptyStateImage() {
     return state.isTemporaryChat.value
         ? ImageLoader.assets(name: AppImage.emojiPeekingEyes, size: 140)
-        : ImageLoader.assets(name: AppImage.logo, size: 100);
+        : ImageLoader.assets(
+            name: AppImage.logo,
+            size: 100,
+            color: GlobalStore.theme.colorScheme.primary,
+          );
   }
 
   Widget _buildChatItem(BuildContext context, int index) {
