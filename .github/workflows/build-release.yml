@@ -299,3 +299,14 @@ jobs:
             windows/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+#配置仓库变量和密钥
+#  Repository Variables (可选配置)
+#  ANDROID_SIGNING=true          # 是否启用Android签名 (true/false)
+#  INSTALL_MPV=true              # Linux构建是否安装MPV (true/false)
+#
+#  Repository Secrets (Android签名需要)
+#  KEYSTORE_BASE64              # Android keystore文件的base64编码
+#  STORE_PASSWORD               # Keystore密码
+#  KEY_PASSWORD                 # Key密码
+#  KEY_ALIAS                    # Key别名
