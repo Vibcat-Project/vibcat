@@ -44,8 +44,8 @@ dependencies:
   # 代码高亮
   flutter_highlight: ^0.7.0
   # Markdown
-#  markdown_widget:
-#    path: ../markdown_widget
+  #  markdown_widget:
+  #    path: ../markdown_widget
   markdown_widget:
     git:
       url: https://github.com/Vibcat-Project/markdown_widget.git
@@ -94,19 +94,22 @@ dev_dependencies:
 
 flutter_launcher_icons:
   android: true
+  adaptive_icon_background: "#222222"
+  adaptive_icon_foreground: "assets/images/logo/logo.png"
+  adaptive_icon_foreground_inset: 16 # This is used to add padding (in %) to the foreground icon when generating an adaptive icon. The default value is 16.
   ios: true
-  image_path: "assets/icon/icon.png"
+  image_path: "assets/images/logo/logo-fill.png"
   min_sdk_android: 21 # android min sdk min:16, default 21
   web:
     generate: true
-    image_path: "path/to/image.png"
+    image_path: "assets/images/logo/logo-fill.png"
   windows:
     generate: true
-    image_path: "path/to/image.png"
+    image_path: "assets/images/logo/logo-fill.png"
     icon_size: 48 # min:48, max:256, default: 48
   macos:
     generate: true
-    image_path: "path/to/image.png"
+    image_path: "assets/images/logo/logo-fill.png"
 
 # The following section is specific to Flutter packages.
 flutter:
@@ -149,6 +152,7 @@ flutter:
 
   assets:
     - assets/images/
+    - assets/images/logo/
     - assets/images/provider/
     - assets/lotties/
     - assets/files/
