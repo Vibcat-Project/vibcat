@@ -108,7 +108,7 @@ jobs:
       matrix:
         include:
           - platform: android
-            build_cmd: flutter build apk --release # --split-per-abi
+            build_cmd: flutter build apk --release --split-per-abi
             artifact_path: build/app/outputs/flutter-apk/*.apk
           - platform: ios
             build_cmd: flutter build ios --release --no-codesign
@@ -167,12 +167,23 @@ jobs:
           cd build/ios/iphoneos/
           zip -q -r ios_no_sign.ipa Payload
 
-      - name: Upload Artifacts
+      - name: Upload Artifacts (Android only)
+        if: matrix.platform == 'android'
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.platform }}
           path: |
-            ${{ needs.read-config.outputs.app_dir }}/${{ matrix.artifact_path }}
+            ${{ needs.read-config.outputs.app_dir }}/build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk
+            ${{ needs.read-config.outputs.app_dir }}/build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
+            ${{ needs.read-config.outputs.app_dir }}/build/app/outputs/flutter-apk/app-x86_64-release.apk
+
+      - name: Upload Artifacts (iOS only)
+        if: matrix.platform == 'ios'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.platform }}
+          path: |
+            ${{ needs.read-config.outputs.app_dir }}/build/ios/iphoneos/ios_no_sign.ipa
 
   # macOS 构建
   build-macos:
