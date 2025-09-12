@@ -309,7 +309,7 @@ jobs:
 
   # 创建Release
   create-release:
-    needs: [ read-config, build-mobile, build-macos, build-linux, build-windows ]
+    needs: [ read-config, build-mobile] # , build-macos, build-linux, build-windows
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -326,10 +326,10 @@ jobs:
           tag_name: ${{ github.event.inputs.version_tag || github.ref_name }}
           files: |
             android/*.apk
-            ios/*.ipa
-            macos/*.zip
-            linux/*.tar.gz
-            windows/*.zip
+#            ios/*.ipa
+#            macos/*.zip
+#            linux/*.tar.gz
+#            windows/*.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
