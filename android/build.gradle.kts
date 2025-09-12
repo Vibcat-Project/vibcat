@@ -1,7 +1,38 @@
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+
+extra["compileSdk"] = 35
+//extra["minSdk"] = 21
+extra["targetSdk"] = 35
+
 allprojects {
     repositories {
         google()
         mavenCentral()
+    }
+
+    // 为所有模块统一配置 Android 设置
+    afterEvaluate {
+        if (hasProperty("android")) {
+            configure<com.android.build.gradle.BaseExtension> {
+                compileSdkVersion(rootProject.extra["compileSdk"] as Int)
+
+                defaultConfig {
+//                    minSdk = rootProject.extra["minSdk"] as Int
+                    targetSdk = rootProject.extra["targetSdk"] as Int
+                }
+
+                compileOptions {
+                    sourceCompatibility = JavaVersion.VERSION_11
+                    targetCompatibility = JavaVersion.VERSION_11
+                }
+            }
+        }
+    }
+
+    tasks.withType<KotlinCompile>().configureEach {
+        kotlinOptions {
+            jvmTarget = JavaVersion.VERSION_11.toString()
+        }
     }
 }
 

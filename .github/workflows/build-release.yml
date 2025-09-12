@@ -116,11 +116,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Android SDK components (Android only)
-        if: matrix.platform == 'android'
-        run: |
-          yes | sdkmanager --licenses
-          sdkmanager "platforms;android-35" "build-tools;35.0.0"
 
       - name: Setup Android Keystore (Android only)
         if: matrix.platform == 'android'
