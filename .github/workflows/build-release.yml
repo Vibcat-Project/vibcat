@@ -98,8 +98,8 @@ jobs:
           echo "EOF" >> $GITHUB_OUTPUT
           echo "prerelease=$PRERELEASE" >> $GITHUB_OUTPUT
 
-  # macOS, iOS, Android 构建
-  build-mobile-desktop:
+  # Android 和 iOS 构建
+  build-mobile:
     needs: read-config
     runs-on: macos-latest
     permissions:
@@ -112,10 +112,7 @@ jobs:
             artifact_path: build/app/outputs/flutter-apk/*.apk
           - platform: ios
             build_cmd: flutter build ios --release --no-codesign
-            artifact_path: build/ios/iphoneos/ios_no_sign.ipa
-          - platform: macos
-            build_cmd: flutter_distributor package --platform macos --targets dmg,zip --skip-clean
-            artifact_path: build/dist/*/*
+            artifact_path: build/ios/iphoneos/Runner.app
     steps:
       - uses: actions/checkout@v4
 
@@ -151,21 +148,10 @@ jobs:
           flutter-version: ${{ env.FLUTTER_VERSION }}
           cache: true
 
-      - name: Enable Flutter Desktop (macOS only)
-        if: matrix.platform == 'macos'
-        run: flutter config --enable-macos-desktop
-
       - name: Install dependencies
         run: |
           cd ${{ needs.read-config.outputs.app_dir }}
           flutter pub get
-
-      - name: Install additional tools
-        run: |
-          if [ "${{ matrix.platform }}" == "macos" ]; then
-            npm install -g appdmg
-            dart pub global activate flutter_distributor
-          fi
 
       - name: Build ${{ matrix.platform }}
         run: |
@@ -185,7 +171,48 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.platform }}
-          path: ${{ needs.read-config.outputs.app_dir }}/${{ matrix.artifact_path }}
+          path: |
+            ${{ needs.read-config.outputs.app_dir }}/build/app/outputs/flutter-apk/*.apk
+            ${{ needs.read-config.outputs.app_dir }}/build/ios/iphoneos/*.ipa
+
+  # macOS 构建
+  build-macos:
+    needs: read-config
+    runs-on: macos-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+
+      - name: Enable Flutter Desktop
+        run: flutter config --enable-macos-desktop
+
+      - name: Install dependencies
+        run: |
+          cd ${{ needs.read-config.outputs.app_dir }}
+          flutter pub get
+
+      - name: Build macOS
+        run: |
+          cd ${{ needs.read-config.outputs.app_dir }}
+          flutter build macos --release
+
+      - name: Create macOS ZIP
+        run: |
+          cd ${{ needs.read-config.outputs.app_dir }}/build/macos/Build/Products/Release
+          zip -r macos-app.zip *.app
+
+      - name: Upload macOS Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos
+          path: ${{ needs.read-config.outputs.app_dir }}/build/macos/Build/Products/Release/macos-app.zip
 
   # Linux 构建
   build-linux:
@@ -219,21 +246,21 @@ jobs:
           cd ${{ needs.read-config.outputs.app_dir }}
           flutter pub get
 
-      - name: Install flutter_distributor
-        run: dart pub global activate flutter_distributor
-
       - name: Build Linux
         run: |
           cd ${{ needs.read-config.outputs.app_dir }}
-          flutter_distributor package --platform linux --targets deb,zip --skip-clean
+          flutter build linux --release
+
+      - name: Create Linux TAR.GZ
+        run: |
+          cd ${{ needs.read-config.outputs.app_dir }}/build/linux/x64/release
+          tar -czf linux-app.tar.gz bundle/
 
       - name: Upload Linux Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: linux
-          path: |
-            ${{ needs.read-config.outputs.app_dir }}/build/dist/*/*.deb
-            ${{ needs.read-config.outputs.app_dir }}/build/dist/*/*.zip
+          path: ${{ needs.read-config.outputs.app_dir }}/build/linux/x64/release/linux-app.tar.gz
 
   # Windows 构建
   build-windows:
@@ -258,25 +285,25 @@ jobs:
           cd ${{ needs.read-config.outputs.app_dir }}
           flutter pub get
 
-      - name: Install flutter_distributor
-        run: dart pub global activate flutter_distributor
-
       - name: Build Windows
         run: |
           cd ${{ needs.read-config.outputs.app_dir }}
-          flutter_distributor package --platform windows --targets msix,zip --skip-clean
+          flutter build windows --release
+
+      - name: Create Windows ZIP
+        run: |
+          cd ${{ needs.read-config.outputs.app_dir }}/build/windows/x64/runner/Release
+          Compress-Archive -Path * -DestinationPath windows-app.zip
 
       - name: Upload Windows Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: windows
-          path: |
-            ${{ needs.read-config.outputs.app_dir }}/build/dist/*/*.msix
-            ${{ needs.read-config.outputs.app_dir }}/build/dist/*/*.zip
+          path: ${{ needs.read-config.outputs.app_dir }}/build/windows/x64/runner/Release/windows-app.zip
 
   # 创建Release
   create-release:
-    needs: [ read-config, build-mobile-desktop, build-linux, build-windows ]
+    needs: [ read-config, build-mobile, build-macos, build-linux, build-windows ]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -294,9 +321,9 @@ jobs:
           files: |
             android/*.apk
             ios/*.ipa
-            macos/*
-            linux/*
-            windows/*
+            macos/*.zip
+            linux/*.tar.gz
+            windows/*.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
