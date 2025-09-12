@@ -110,12 +110,11 @@ jobs:
           - platform: android
             build_cmd: flutter build apk --release # --split-per-abi
             artifact_path: build/app/outputs/flutter-apk/*.apk
-#          - platform: ios
-#            build_cmd: flutter build ios --release --no-codesign
-#            artifact_path: build/ios/iphoneos/Runner.app
+          - platform: ios
+            build_cmd: flutter build ios --release --no-codesign
+            artifact_path: build/ios/iphoneos/Runner.app
     steps:
       - uses: actions/checkout@v4
-
 
       - name: Setup Android Keystore (Android only)
         if: matrix.platform == 'android'
@@ -177,134 +176,134 @@ jobs:
             ${{ needs.read-config.outputs.app_dir }}/build/ios/iphoneos/*.ipa
 
   # macOS 构建
-#  build-macos:
-#    needs: read-config
-#    runs-on: macos-latest
-#    permissions:
-#      contents: write
-#    steps:
-#      - uses: actions/checkout@v4
-#
-#      - name: Setup Flutter
-#        uses: subosito/flutter-action@v2
-#        with:
-#          flutter-version: ${{ env.FLUTTER_VERSION }}
-#          cache: true
-#
-#      - name: Enable Flutter Desktop
-#        run: flutter config --enable-macos-desktop
-#
-#      - name: Install dependencies
-#        run: |
-#          cd ${{ needs.read-config.outputs.app_dir }}
-#          flutter pub get
-#
-#      - name: Build macOS
-#        run: |
-#          cd ${{ needs.read-config.outputs.app_dir }}
-#          flutter build macos --release
-#
-#      - name: Create macOS ZIP
-#        run: |
-#          cd ${{ needs.read-config.outputs.app_dir }}/build/macos/Build/Products/Release
-#          zip -r macos-app.zip *.app
-#
-#      - name: Upload macOS Artifacts
-#        uses: actions/upload-artifact@v4
-#        with:
-#          name: macos
-#          path: ${{ needs.read-config.outputs.app_dir }}/build/macos/Build/Products/Release/macos-app.zip
+  build-macos:
+    needs: read-config
+    runs-on: macos-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+
+      - name: Enable Flutter Desktop
+        run: flutter config --enable-macos-desktop
+
+      - name: Install dependencies
+        run: |
+          cd ${{ needs.read-config.outputs.app_dir }}
+          flutter pub get
+
+      - name: Build macOS
+        run: |
+          cd ${{ needs.read-config.outputs.app_dir }}
+          flutter build macos --release
+
+      - name: Create macOS ZIP
+        run: |
+          cd ${{ needs.read-config.outputs.app_dir }}/build/macos/Build/Products/Release
+          zip -r macos-app.zip *.app
+
+      - name: Upload macOS Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos
+          path: ${{ needs.read-config.outputs.app_dir }}/build/macos/Build/Products/Release/macos-app.zip
 
   # Linux 构建
-#  build-linux:
-#    needs: read-config
-#    runs-on: ubuntu-22.04
-#    permissions:
-#      contents: write
-#    steps:
-#      - uses: actions/checkout@v4
-#
-#      - name: Setup Flutter
-#        uses: subosito/flutter-action@v2
-#        with:
-#          flutter-version: ${{ env.FLUTTER_VERSION }}
-#          cache: true
-#
-#      - name: Install Linux dependencies
-#        run: |
-#          sudo apt-get update
-#          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev
-#          # 可选：如果项目需要mpv
-#          if [ "${{ vars.INSTALL_MPV }}" == "true" ]; then
-#            sudo apt-get install -y libmpv-dev mpv
-#          fi
-#
-#      - name: Enable Flutter Desktop
-#        run: flutter config --enable-linux-desktop
-#
-#      - name: Install dependencies
-#        run: |
-#          cd ${{ needs.read-config.outputs.app_dir }}
-#          flutter pub get
-#
-#      - name: Build Linux
-#        run: |
-#          cd ${{ needs.read-config.outputs.app_dir }}
-#          flutter build linux --release
-#
-#      - name: Create Linux TAR.GZ
-#        run: |
-#          cd ${{ needs.read-config.outputs.app_dir }}/build/linux/x64/release
-#          tar -czf linux-app.tar.gz bundle/
-#
-#      - name: Upload Linux Artifacts
-#        uses: actions/upload-artifact@v4
-#        with:
-#          name: linux
-#          path: ${{ needs.read-config.outputs.app_dir }}/build/linux/x64/release/linux-app.tar.gz
+  build-linux:
+    needs: read-config
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+
+      - name: Install Linux dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev
+          # 可选：如果项目需要mpv
+          if [ "${{ vars.INSTALL_MPV }}" == "true" ]; then
+            sudo apt-get install -y libmpv-dev mpv
+          fi
+
+      - name: Enable Flutter Desktop
+        run: flutter config --enable-linux-desktop
+
+      - name: Install dependencies
+        run: |
+          cd ${{ needs.read-config.outputs.app_dir }}
+          flutter pub get
+
+      - name: Build Linux
+        run: |
+          cd ${{ needs.read-config.outputs.app_dir }}
+          flutter build linux --release
+
+      - name: Create Linux TAR.GZ
+        run: |
+          cd ${{ needs.read-config.outputs.app_dir }}/build/linux/x64/release
+          tar -czf linux-app.tar.gz bundle/
+
+      - name: Upload Linux Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux
+          path: ${{ needs.read-config.outputs.app_dir }}/build/linux/x64/release/linux-app.tar.gz
 
   # Windows 构建
-#  build-windows:
-#    needs: read-config
-#    runs-on: windows-latest
-#    permissions:
-#      contents: write
-#    steps:
-#      - uses: actions/checkout@v4
-#
-#      - name: Setup Flutter
-#        uses: subosito/flutter-action@v2
-#        with:
-#          flutter-version: ${{ env.FLUTTER_VERSION }}
-#          cache: true
-#
-#      - name: Enable Flutter Desktop
-#        run: flutter config --enable-windows-desktop
-#
-#      - name: Install dependencies
-#        run: |
-#          cd ${{ needs.read-config.outputs.app_dir }}
-#          flutter pub get
-#
-#      - name: Build Windows
-#        run: |
-#          cd ${{ needs.read-config.outputs.app_dir }}
-#          flutter build windows --release
-#
-#      - name: Create Windows ZIP
-#        run: |
-#          cd ${{ needs.read-config.outputs.app_dir }}/build/windows/x64/runner/Release
-#          Compress-Archive -Path * -DestinationPath windows-app.zip
-#
-#      - name: Upload Windows Artifacts
-#        uses: actions/upload-artifact@v4
-#        with:
-#          name: windows
-#          path: ${{ needs.read-config.outputs.app_dir }}/build/windows/x64/runner/Release/windows-app.zip
+  build-windows:
+    needs: read-config
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+
+      - name: Enable Flutter Desktop
+        run: flutter config --enable-windows-desktop
+
+      - name: Install dependencies
+        run: |
+          cd ${{ needs.read-config.outputs.app_dir }}
+          flutter pub get
+
+      - name: Build Windows
+        run: |
+          cd ${{ needs.read-config.outputs.app_dir }}
+          flutter build windows --release
+
+      - name: Create Windows ZIP
+        run: |
+          cd ${{ needs.read-config.outputs.app_dir }}/build/windows/x64/runner/Release
+          Compress-Archive -Path * -DestinationPath windows-app.zip
+
+      - name: Upload Windows Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows
+          path: ${{ needs.read-config.outputs.app_dir }}/build/windows/x64/runner/Release/windows-app.zip
 
   # 创建Release
   create-release:
-    needs: [ read-config, build-mobile] # , build-macos, build-linux, build-windows
+    needs: [ read-config, build-mobile, build-macos, build-linux, build-windows ]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -321,10 +320,10 @@ jobs:
           tag_name: ${{ github.event.inputs.version_tag || github.ref_name }}
           files: |
             android/*.apk
-#            ios/*.ipa
-#            macos/*.zip
-#            linux/*.tar.gz
-#            windows/*.zip
+            ios/*.ipa
+            macos/*.zip
+            linux/*.tar.gz
+            windows/*.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
