@@ -404,10 +404,10 @@ jobs:
 
       - name: Install NSIS
         run: |
-          Invoke-WebRequest -Uri "https://nsis.sourceforge.io/mediawiki/images/4/4a/NSIS_3.08.zip" -OutFile "nsis.zip"
+          Invoke-WebRequest -Uri "https://github.com/feassh/NSIS/raw/refs/heads/main/NSIS-3.11.zip" -OutFile "nsis.zip"
           Expand-Archive -Path "nsis.zip" -DestinationPath "nsis"
-          $env:PATH += ";$(Get-Location)\nsis\NSIS 3.08"
-          echo "$(Get-Location)\nsis\NSIS 3.08" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          $env:PATH += ";$(Get-Location)\nsis"
+          echo "$(Get-Location)\nsis" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
       - name: Create NSIS installer script
         run: |
