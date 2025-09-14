@@ -5,6 +5,7 @@ class AppImage {
 
   static const logo = '$logoPath/logo.svg';
   static const logoPng = '$logoPath/logo.png';
+  static const logoFillRoundIco = '$logoPath/logo-fill-round.ico';
 
   static const providerOpenAI = '$providerPath/openai.svg';
   static const providerVolcanoEngine = '$providerPath/volcanoEngine.png';

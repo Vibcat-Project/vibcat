@@ -47,7 +47,9 @@ Future<void> initTrayManager() async {
   await windowManager.waitUntilReadyToShow();
   await windowManager.setPreventClose(true); // 拦截关闭事件
 
-  await trayManager.setIcon(AppImage.logoPng);
+  await trayManager.setIcon(
+    Platform.isWindows ? AppImage.logoFillRoundIco : AppImage.logoPng,
+  );
 
   await trayManager.setContextMenu(
     Menu(

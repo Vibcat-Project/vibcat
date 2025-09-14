@@ -65,7 +65,7 @@ class MainLogic extends GetxController with TrayListener, WindowListener {
       case TrayMenuItem.show:
         _showWindow();
       case TrayMenuItem.exit:
-        await windowManager.close();
+        await windowManager.destroy();
         break;
       default:
         break;
