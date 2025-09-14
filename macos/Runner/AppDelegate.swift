@@ -11,10 +11,11 @@ class AppDelegate: FlutterAppDelegate {
         return true
     }
 
-    override func applicationDidBecomeActive(_ notification: Notification) {
-        // 点击 Dock 栏应用图标，如果窗口被隐藏，则显示窗口
+    override func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        // 点击 Dock 栏应用图标时，如果窗口处于隐藏状态，则显示窗口
         if let window = mainFlutterWindow, !window.isVisible {
             window.makeKeyAndOrderFront(nil)
         }
+        return true
     }
 }

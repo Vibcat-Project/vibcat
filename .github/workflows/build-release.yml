@@ -12,6 +12,7 @@ on:
         type: string
 
 env:
+  APP_NAME: 'Vibcat'
   FLUTTER_VERSION: '3.35.x'
   JAVA_VERSION: '17'
   APP_DIR: '.' # 可配置应用目录，默认为根目录
@@ -23,6 +24,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.version.outputs.version }}
+      version_no_v: ${{ steps.version.outputs.version_no_v }}
       version_desc: ${{ steps.version.outputs.version_desc }}
       prerelease: ${{ steps.version.outputs.prerelease }}
       app_dir: ${{ steps.config.outputs.app_dir }}
@@ -46,6 +48,7 @@ jobs:
         id: version
         run: |
           VERSION="${{ github.event.inputs.version_tag || github.ref_name }}"
+          VERSION_NO_V="${VERSION#v}"
           VERSION_DESC=""
           PRERELEASE="false"
           
@@ -62,7 +65,7 @@ jobs:
               CHANGELOG_VERSION=$(echo "$LATEST_SECTION" | head -1 | sed -n 's/^## \[\([^]]*\)\].*/\1/p')
           
               # 如果changelog中的版本与当前tag匹配，使用changelog内容
-              if [ "$CHANGELOG_VERSION" = "${VERSION#v}" ]; then
+              if [ "$CHANGELOG_VERSION" = "$VERSION_NO_V" ]; then
                 VERSION_DESC=$(echo "$LATEST_SECTION" | tail -n +2 | head -100)
               else
                 VERSION_DESC="Release $VERSION"
@@ -80,6 +83,7 @@ jobs:
           elif [ -f "${{ env.VERSION_FILE }}" ]; then
             echo "Using version file: ${{ env.VERSION_FILE }}"
             VERSION=$(cat ${{ env.VERSION_FILE }} | jq -r '.version // "Unknown"')
+            VERSION_NO_V="${VERSION#v}"
             VERSION_DESC=$(cat ${{ env.VERSION_FILE }} | jq -r '.version_desc // "No description"')
             PRERELEASE=$(cat ${{ env.VERSION_FILE }} | jq -r '.prerelease // false')
           
@@ -93,6 +97,7 @@ jobs:
           fi
           
           echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "version_no_v=$VERSION_NO_V" >> $GITHUB_OUTPUT
           echo "version_desc<<EOF" >> $GITHUB_OUTPUT
           echo "$VERSION_DESC" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
@@ -167,6 +172,38 @@ jobs:
           cd build/ios/iphoneos/
           zip -q -r ios_no_sign.ipa Payload
 
+      - name: Rename Android APKs
+        if: matrix.platform == 'android'
+        run: |
+          cd ${{ needs.read-config.outputs.app_dir }}/build/app/outputs/flutter-apk
+          # 重命名所有APK文件
+          for apk in *.apk; do
+            if [ -f "$apk" ]; then
+              # 提取CPU架构
+              arch=""
+              if [[ "$apk" == *"arm64-v8a"* ]]; then
+                arch="arm64-v8a"
+              elif [[ "$apk" == *"armeabi-v7a"* ]]; then
+                arch="armeabi-v7a"
+              elif [[ "$apk" == *"x86_64"* ]]; then
+                arch="x86_64"
+              else
+                arch="universal"
+              fi
+              new_name="${{ env.APP_NAME }}-${{ needs.read-config.outputs.version_no_v }}-android-${arch}.apk"
+              mv "$apk" "$new_name"
+              echo "Renamed $apk to $new_name"
+            fi
+          done
+
+      - name: Rename iOS IPA
+        if: matrix.platform == 'ios'
+        run: |
+          cd ${{ needs.read-config.outputs.app_dir }}/build/ios/iphoneos
+          if [ -f "ios_no_sign.ipa" ]; then
+            mv "ios_no_sign.ipa" "${{ env.APP_NAME }}-${{ needs.read-config.outputs.version_no_v }}-ios.ipa"
+          fi
+
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -202,16 +239,35 @@ jobs:
           cd ${{ needs.read-config.outputs.app_dir }}
           flutter build macos --release
 
-      - name: Create macOS ZIP
+      - name: Create macOS ZIP (original)
         run: |
           cd ${{ needs.read-config.outputs.app_dir }}/build/macos/Build/Products/Release
-          zip -r macos-app.zip *.app
+          zip -r "${{ env.APP_NAME }}-${{ needs.read-config.outputs.version_no_v }}-macos.zip" *.app
+
+      - name: Create macOS DMG
+        run: |
+          cd ${{ needs.read-config.outputs.app_dir }}/build/macos/Build/Products/Release
+          
+          # 创建临时目录用于DMG
+          mkdir -p dmg_temp
+          cp -R *.app dmg_temp/
+          
+          # 创建Applications链接
+          ln -s /Applications dmg_temp/Applications
+          
+          # 创建DMG
+          hdiutil create -volname "${{ env.APP_NAME }}" -srcfolder dmg_temp -ov -format UDZO "${{ env.APP_NAME }}-${{ needs.read-config.outputs.version_no_v }}-macos.dmg"
+          
+          # 清理临时目录
+          rm -rf dmg_temp
 
       - name: Upload macOS Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: macos
-          path: ${{ needs.read-config.outputs.app_dir }}/build/macos/Build/Products/Release/macos-app.zip
+          path: |
+            ${{ needs.read-config.outputs.app_dir }}/build/macos/Build/Products/Release/${{ env.APP_NAME }}-${{ needs.read-config.outputs.version_no_v }}-macos.zip
+            ${{ needs.read-config.outputs.app_dir }}/build/macos/Build/Products/Release/${{ env.APP_NAME }}-${{ needs.read-config.outputs.version_no_v }}-macos.dmg
 
   # Linux 构建
   build-linux:
@@ -250,16 +306,68 @@ jobs:
           cd ${{ needs.read-config.outputs.app_dir }}
           flutter build linux --release
 
-      - name: Create Linux TAR.GZ
+      - name: Create Linux TAR.GZ (original)
         run: |
           cd ${{ needs.read-config.outputs.app_dir }}/build/linux/x64/release
-          tar -czf linux-app.tar.gz bundle/
+          tar -czf "${{ env.APP_NAME }}-${{ needs.read-config.outputs.version_no_v }}-linux.tar.gz" bundle/
+
+      - name: Prepare DEB package structure
+        run: |
+          cd ${{ needs.read-config.outputs.app_dir }}/build/linux/x64/release
+          
+          # 创建DEB包目录结构
+          mkdir -p deb_temp/DEBIAN
+          mkdir -p deb_temp/opt/${{ env.APP_NAME }}
+          mkdir -p deb_temp/usr/share/applications
+          mkdir -p deb_temp/usr/share/pixmaps
+          
+          # 复制应用文件
+          cp -r bundle/* deb_temp/opt/${{ env.APP_NAME }}/
+          
+          # 创建启动脚本
+          cat > deb_temp/opt/${{ env.APP_NAME }}/${{ env.APP_NAME }} << 'EOF'
+          #!/bin/bash
+          cd "$(dirname "$0")"
+          exec ./${{ env.APP_NAME }}
+          EOF
+          chmod +x deb_temp/opt/${{ env.APP_NAME }}/${{ env.APP_NAME }}
+          
+          # 创建桌面文件
+          cat > deb_temp/usr/share/applications/${{ env.APP_NAME }}.desktop << EOF
+          [Desktop Entry]
+          Name=${{ env.APP_NAME }}
+          Comment=${{ env.APP_NAME }} Application
+          Exec=/opt/${{ env.APP_NAME }}/${{ env.APP_NAME }}
+          Icon=${{ env.APP_NAME }}
+          Terminal=false
+          Type=Application
+          Categories=Utility;
+          EOF
+          
+          # 创建control文件
+          cat > deb_temp/DEBIAN/control << EOF
+          Package: ${{ env.APP_NAME }}
+          Version: ${{ needs.read-config.outputs.version_no_v }}
+          Section: utils
+          Priority: optional
+          Architecture: amd64
+          Maintainer: ${{ env.APP_NAME }} Team <team@example.com>
+          Description: ${{ env.APP_NAME }} Application
+           A Flutter application built for Linux.
+          EOF
+
+      - name: Build DEB package
+        run: |
+          cd ${{ needs.read-config.outputs.app_dir }}/build/linux/x64/release
+          dpkg-deb --build deb_temp "${{ env.APP_NAME }}-${{ needs.read-config.outputs.version_no_v }}-linux.deb"
 
       - name: Upload Linux Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: linux
-          path: ${{ needs.read-config.outputs.app_dir }}/build/linux/x64/release/linux-app.tar.gz
+          path: |
+            ${{ needs.read-config.outputs.app_dir }}/build/linux/x64/release/${{ env.APP_NAME }}-${{ needs.read-config.outputs.version_no_v }}-linux.tar.gz
+            ${{ needs.read-config.outputs.app_dir }}/build/linux/x64/release/${{ env.APP_NAME }}-${{ needs.read-config.outputs.version_no_v }}-linux.deb
 
   # Windows 构建
   build-windows:
@@ -289,16 +397,72 @@ jobs:
           cd ${{ needs.read-config.outputs.app_dir }}
           flutter build windows --release
 
-      - name: Create Windows ZIP
+      - name: Create Windows ZIP (original)
         run: |
           cd ${{ needs.read-config.outputs.app_dir }}/build/windows/x64/runner/Release
-          Compress-Archive -Path * -DestinationPath windows-app.zip
+          Compress-Archive -Path * -DestinationPath "${{ env.APP_NAME }}-${{ needs.read-config.outputs.version_no_v }}-windows.zip"
+
+      - name: Install NSIS
+        run: |
+          Invoke-WebRequest -Uri "https://nsis.sourceforge.io/mediawiki/images/4/4a/NSIS_3.08.zip" -OutFile "nsis.zip"
+          Expand-Archive -Path "nsis.zip" -DestinationPath "nsis"
+          $env:PATH += ";$(Get-Location)\nsis\NSIS 3.08"
+          echo "$(Get-Location)\nsis\NSIS 3.08" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+
+      - name: Create NSIS installer script
+        run: |
+          cd ${{ needs.read-config.outputs.app_dir }}/build/windows/x64/runner/Release
+          
+          $nsisScript = @"
+          !define APP_NAME "${{ env.APP_NAME }}"
+          !define VERSION "${{ needs.read-config.outputs.version_no_v }}"
+          !define PUBLISHER "${{ env.APP_NAME }} Team"
+          !define WEB_SITE "https://github.com/${{ github.repository }}"
+          !define APP_EXE "${{ env.APP_NAME }}.exe"
+          
+          Name "`${APP_NAME}"
+          OutFile "${{ env.APP_NAME }}-${{ needs.read-config.outputs.version_no_v }}-windows-installer.exe"
+          InstallDir "`$PROGRAMFILES\`${APP_NAME}"
+          RequestExecutionLevel admin
+          
+          Section "MainSection" SEC01
+            SetOutPath "`$INSTDIR"
+            File /r "*"
+            CreateDirectory "`$SMPROGRAMS\`${APP_NAME}"
+            CreateShortCut "`$SMPROGRAMS\`${APP_NAME}\`${APP_NAME}.lnk" "`$INSTDIR\`${APP_EXE}"
+            CreateShortCut "`$DESKTOP\`${APP_NAME}.lnk" "`$INSTDIR\`${APP_EXE}"
+          
+            WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\`${APP_NAME}" "DisplayName" "`${APP_NAME}"
+            WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\`${APP_NAME}" "UninstallString" "`$INSTDIR\uninstall.exe"
+            WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\`${APP_NAME}" "DisplayVersion" "`${VERSION}"
+            WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\`${APP_NAME}" "Publisher" "`${PUBLISHER}"
+            WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\`${APP_NAME}" "URLInfoAbout" "`${WEB_SITE}"
+            WriteUninstaller "`$INSTDIR\uninstall.exe"
+          SectionEnd
+          
+          Section "Uninstall"
+            Delete "`$DESKTOP\`${APP_NAME}.lnk"
+            Delete "`$SMPROGRAMS\`${APP_NAME}\`${APP_NAME}.lnk"
+            RMDir "`$SMPROGRAMS\`${APP_NAME}"
+            RMDir /r "`$INSTDIR"
+            DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\`${APP_NAME}"
+          SectionEnd
+          "@
+          
+          $nsisScript | Out-File -FilePath "installer.nsi" -Encoding UTF8
+
+      - name: Build NSIS installer
+        run: |
+          cd ${{ needs.read-config.outputs.app_dir }}/build/windows/x64/runner/Release
+          makensis installer.nsi
 
       - name: Upload Windows Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: windows
-          path: ${{ needs.read-config.outputs.app_dir }}/build/windows/x64/runner/Release/windows-app.zip
+          path: |
+            ${{ needs.read-config.outputs.app_dir }}/build/windows/x64/runner/Release/${{ env.APP_NAME }}-${{ needs.read-config.outputs.version_no_v }}-windows.zip
+            ${{ needs.read-config.outputs.app_dir }}/build/windows/x64/runner/Release/${{ env.APP_NAME }}-${{ needs.read-config.outputs.version_no_v }}-windows-installer.exe
 
   # 创建Release
   create-release:
@@ -321,8 +485,11 @@ jobs:
             android/*.apk
             ios/*.ipa
             macos/*.zip
+            macos/*.dmg
             linux/*.tar.gz
+            linux/*.deb
             windows/*.zip
+            windows/*.exe
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
