@@ -231,7 +231,7 @@ jobs:
       - name: Install Linux dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev
+          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev libayatana-appindicator3-dev
           # 可选：如果项目需要mpv
           if [ "${{ vars.INSTALL_MPV }}" == "true" ]; then
             sudo apt-get install -y libmpv-dev mpv
