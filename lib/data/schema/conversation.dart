@@ -14,7 +14,7 @@ class Conversation extends BaseSchema {
   late String title;
 
   @Enumerated(EnumType.name)
-  late AIThinkType thinkType;
+  AIThinkType thinkType = AIThinkType.auto;
 
   Conversation copyWith({
     int? aiConfigId,

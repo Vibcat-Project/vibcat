@@ -677,7 +677,7 @@ class ReasoningContainer extends StatelessWidget {
                 width: double.infinity,
                 margin: EdgeInsets.symmetric(horizontal: 10),
                 child: Text(
-                  message.reasoning!.trim(),
+                  message.reasoning!.trim(), // maybe trimRight()
                   style: const TextStyle(fontSize: 14, height: 1.4),
                 ),
               ),

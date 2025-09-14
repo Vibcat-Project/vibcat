@@ -73,6 +73,8 @@ class Translation extends Translations {
       'linkLaunchFailed': '链接跳转失败辣！！ 😭',
       'githubOpenSourceRepo': 'Github 开源仓库',
       'communicationGroupQQ': 'QQ 交流群',
+      'addDefaultConversationModelFirst': '请先配置默认对话模型',
+      'translationFailed': '翻译失败',
     },
     'en_US': {'appName': 'Vibcat', 'appSlogan': ''},
   };

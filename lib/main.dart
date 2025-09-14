@@ -1,7 +1,13 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:tray_manager/tray_manager.dart';
+import 'package:vibcat/enum/tray_menu_item.dart';
+import 'package:vibcat/global/images.dart';
 import 'package:vibcat/global/isar.dart';
 import 'package:vibcat/global/store.dart';
 import 'package:vibcat/theme.dart';
+import 'package:window_manager/window_manager.dart';
 
 import 'app.dart';
 
@@ -29,4 +35,26 @@ Future<void> init() async {
 
   // 初始化 Isar 数据库
   await IsarInstance.init();
+
+  await initTrayManager();
+}
+
+/// 初始化桌面系统托盘
+Future<void> initTrayManager() async {
+  if (!Platform.isWindows && !Platform.isMacOS && !Platform.isLinux) return;
+
+  await windowManager.ensureInitialized();
+  await windowManager.waitUntilReadyToShow();
+  await windowManager.setPreventClose(true); // 拦截关闭事件
+
+  await trayManager.setIcon(AppImage.logoPng);
+
+  await trayManager.setContextMenu(
+    Menu(
+      items: [
+        MenuItem(key: TrayMenuItem.show.name, label: '显示窗口'),
+        MenuItem(key: TrayMenuItem.exit.name, label: '退出'),
+      ],
+    ),
+  );
 }

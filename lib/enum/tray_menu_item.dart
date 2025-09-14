@@ -1,0 +1,1 @@
+enum TrayMenuItem { show, exit }

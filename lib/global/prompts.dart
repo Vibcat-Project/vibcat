@@ -170,4 +170,7 @@ class Prompts {
   
   Please respond in the same language as the user's question.
   """;
+
+  static const translate =
+      'You are now a translation assistant. Please automatically detect the language used in the content provided by the user. If the language is Chinese, translate it into English; if the language is not Chinese, translate it into Chinese. Note: Please output only the translation result without any extra content.';
 }
