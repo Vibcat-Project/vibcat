@@ -14,12 +14,12 @@
 </p>
 </details>
 
-<hr>
+<h2></h2>
 
 <details>
 <summary>macOS 全局翻译组件效果截图 点击展开/收起</summary>
 <p align="center">
-  <img src="https://raw.githubusercontent.com/Vibcat-Project/vibcat/master/docs/images/screenshot-5.png" width="400px">
-  <img src="https://raw.githubusercontent.com/Vibcat-Project/vibcat/master/docs/images/screenshot-6.png" width="400px">
+  <img src="https://raw.githubusercontent.com/Vibcat-Project/vibcat/master/docs/images/screenshot-5.webp" width="400px">
+  <img src="https://raw.githubusercontent.com/Vibcat-Project/vibcat/master/docs/images/screenshot-6.webp" width="400px">
 </p>
 </details>
