@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:vibcat/bean/chat_request.dart';
 import 'package:vibcat/data/bean/ai_model.dart';
 import 'package:vibcat/data/schema/ai_model_config.dart';
@@ -7,13 +8,17 @@ import '../../schema/chat_message.dart';
 import '../../schema/conversation.dart';
 
 class AINetRepository {
-  Future<List<AIModel>> getModelList(AIModelConfig config) async {
+  Future<List<AIModel>> getModelList(
+    AIModelConfig config, [
+    CancelToken? cancelToken,
+  ]) async {
     return AIRequestService.create(
       ChatRequest(
         config: config,
         model: AIModel(id: ''),
         conversation: Conversation(),
         messages: [],
+        cancelToken: cancelToken,
       ),
     ).getModelList();
   }

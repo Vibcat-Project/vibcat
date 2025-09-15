@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:vibcat/data/bean/ai_model.dart';
 import 'package:vibcat/enum/ai_provider_type.dart';
 import 'package:vibcat/service/ai/ai_request.dart';
@@ -20,6 +21,7 @@ class OpenAIRequestService extends AIRequestService {
       final res = await httpClient.get(
         '${request.config.endPoint}/models',
         headers: {'Authorization': 'Bearer ${request.config.apiKey}'},
+        cancelToken: request.cancelToken,
       );
       if (!res.isSuccess || res.data == null) {
         return [];
@@ -109,9 +111,14 @@ class OpenAIRequestService extends AIRequestService {
       '${request.config.endPoint}/chat/completions',
       body: data,
       headers: {'Authorization': 'Bearer ${request.config.apiKey}'},
+      cancelToken: request.cancelToken,
     );
     if (!res.isSuccess || res.data == null) {
-      return ChatResponse(type: ChatResponseType.error, content: res.message);
+      if (res.raw is DioException && CancelToken.isCancel(res.raw)) {
+        return ChatResponse(type: ChatResponseType.content);
+      } else {
+        return ChatResponse(type: ChatResponseType.error, content: res.message);
+      }
     }
 
     ChatResponse response = ChatResponse(type: ChatResponseType.content);

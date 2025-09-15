@@ -18,6 +18,7 @@ class SelectModelComponent extends StatelessWidget {
     return Obx(
       () => ListView.builder(
         shrinkWrap: true,
+        padding: EdgeInsets.zero,
         physics: NeverScrollableScrollPhysics(),
         itemCount: state.aiModelConfigList.length,
         itemBuilder: (_, index) {

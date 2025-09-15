@@ -18,8 +18,8 @@ class ChatResponseBuilder {
 
   ChatEvent build(ChatResponse response) {
     return switch (response.type) {
-      ChatResponseType.content => _handleContent(response.content!),
-      ChatResponseType.reasoning => _handleReasoning(response.reasoning!),
+      ChatResponseType.content => _handleContent(response.content ?? ''),
+      ChatResponseType.reasoning => _handleReasoning(response.reasoning ?? ''),
       ChatResponseType.usage => _handleUsage(response.tokenUsage),
       ChatResponseType.error => ChatEvent.error(response.content ?? ''),
     };

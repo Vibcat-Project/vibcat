@@ -50,6 +50,7 @@ class SpotlightService extends GetxService {
             ..role = ChatRole.user
             ..content = text,
         ],
+        cancelToken: null,
       ),
     );
 

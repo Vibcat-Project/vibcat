@@ -50,16 +50,29 @@ abstract class AIRequestService {
         body: reqBody,
         headers: {'Authorization': 'Bearer ${request.config.apiKey}'},
         responseType: ResponseType.stream,
+        cancelToken: request.cancelToken,
       );
 
       if (!res.isSuccess || res.data == null) {
-        yield ChatResponse(type: ChatResponseType.error, content: res.message);
+        if (res.raw is DioException && CancelToken.isCancel(res.raw)) {
+          yield ChatResponse(type: ChatResponseType.content);
+        } else {
+          yield ChatResponse(
+            type: ChatResponseType.error,
+            content: res.message,
+          );
+        }
         return;
       }
 
       final stream = transformStream(res.raw);
 
       await for (final line in stream) {
+        // 检查是否已取消
+        if (request.cancelToken?.isCancelled ?? false) {
+          break;
+        }
+
         if (line.startsWith('data: ')) {
           if (kDebugMode) {
             print(line);
@@ -73,6 +86,13 @@ abstract class AIRequestService {
           // 使用 yield* 将子类解析后的 stream 块融入当前 stream
           yield* parseStreamData(data);
         }
+      }
+    } on DioException catch (e) {
+      // 检查是否为取消事件
+      if (CancelToken.isCancel(e)) {
+        yield ChatResponse(type: ChatResponseType.content);
+      } else {
+        yield ChatResponse(type: ChatResponseType.error, content: e.message);
       }
     } catch (e) {
       yield ChatResponse(type: ChatResponseType.error, content: e.toString());

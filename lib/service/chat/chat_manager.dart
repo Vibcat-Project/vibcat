@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:dio/dio.dart';
 import 'package:get/get.dart';
 import 'package:json5/json5.dart';
 import 'package:vibcat/data/repository/database/app_db.dart';
@@ -29,12 +30,14 @@ class ChatManager {
   final ChatMessage userMsg;
   final ChatMessage responseMsg;
   final HomeState state;
+  final CancelToken? cancelToken;
   final bool isRetry;
 
   ChatManager({
     required this.userMsg,
     required this.responseMsg,
     required this.state,
+    required this.cancelToken,
     this.isRetry = false,
   });
 
@@ -44,14 +47,27 @@ class ChatManager {
       model: state.currentAIModel.value!,
       conversation: state.currentConversation.value!,
       messages: List.of(state.chatMessage)..remove(responseMsg),
+      cancelToken: cancelToken,
     );
 
     if (!isRetry) {
       yield* _processWebSearch(request);
     }
 
+    // 检查是否已取消
+    if (cancelToken?.isCancelled ?? false) {
+      yield ChatEvent.completed();
+      return;
+    }
+
     final responseBuilder = ChatResponseBuilder();
     await for (final response in _aiService.chatCompletions(request)) {
+      // 检查是否已取消
+      if (cancelToken?.isCancelled ?? false) {
+        yield ChatEvent.completed();
+        return;
+      }
+
       final event = responseBuilder.build(response);
       if (event is ErrorEvent) {
         yield event;
@@ -96,6 +112,7 @@ class ChatManager {
             ..content = Prompts.topicNaming,
           ...state.chatMessage,
         ]),
+        cancelToken: cancelToken,
       ),
     );
     if (!result.isSuccess) {
@@ -156,6 +173,16 @@ class ChatManager {
 
   /// 生成搜索问题
   Future<Questions?> _generateSearchQuestions(ChatRequest request) async {
+    // 将本次提问和上次 AI 回答结果发送给 AI，获取搜索问题
+    final lastAIMsgIndex = request.messages.lastIndexWhere(
+      (e) => e.role == ChatRole.assistant,
+    );
+    ChatMessage? lastAIMsg;
+
+    if (lastAIMsgIndex != -1) {
+      lastAIMsg = request.messages[lastAIMsgIndex];
+    }
+
     final res = await _aiService.chatCompletionOnce(
       ChatRequest(
         config: request.config,
@@ -165,10 +192,12 @@ class ChatManager {
           ChatMessage()
             ..role = ChatRole.system
             ..content = Prompts.webSearchKwRephraser,
+          if (lastAIMsg != null) lastAIMsg,
           ChatMessage()
             ..role = ChatRole.user
             ..content = userMsg.content,
         ],
+        cancelToken: cancelToken,
         additionalParams: Prompts.webSearchKwRephraserJsonSchema,
       ),
     );

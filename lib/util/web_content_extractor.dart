@@ -21,6 +21,9 @@ class WebContentExtractor {
           // );
           completer.complete(null);
         },
+        onReceivedError: (_, _, _) {
+          completer.complete(null);
+        },
         onNavigationResponse: (controller, navigationResponse) async {
           if (navigationResponse.isForMainFrame) {
             responseHeaders = navigationResponse.response?.headers;

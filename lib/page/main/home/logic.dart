@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math';
 
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:share_plus/share_plus.dart';
@@ -51,6 +52,7 @@ class HomeLogic extends GetxController with GetSingleTickerProviderStateMixin {
   bool _currentReasoningScrollFinished = true;
   DateTime? _reasoningStartTime;
   StreamSubscription<ChatEvent>? _chatSubscription;
+  CancelToken? _cancelToken;
 
   @override
   void onInit() {
@@ -222,7 +224,10 @@ class HomeLogic extends GetxController with GetSingleTickerProviderStateMixin {
 
   /// 主要的聊天函数
   Future<void> chat([bool retry = false]) async {
-    if (state.isResponding.value) return;
+    if (state.isResponding.value) {
+      _stopChat();
+      return;
+    }
     if (!await _validateChatConditions()) return;
 
     AppUtil.hideKeyboard();
@@ -253,6 +258,47 @@ class HomeLogic extends GetxController with GetSingleTickerProviderStateMixin {
     }
 
     await _performChat(userMsg, retry);
+  }
+
+  void _stopChat() {
+    // 取消网络请求
+    _cancelToken?.cancel();
+
+    // 取消订阅
+    // _chatSubscription?.cancel();
+    // _chatSubscription = null;
+
+    // 更新最后一条 AI 消息状态
+    // 当前取消事件使用的是 “ChatEvent.completed()”，所以下面的逻辑暂时不需要
+    // final lastMsg = state.chatMessage.lastOrNull;
+    // if (lastMsg != null && lastMsg.role == ChatRole.assistant) {
+    //   lastMsg.status = ChatMessageStatus.success;
+    //   state.chatMessage.refresh();
+    //
+    //   // 保存到数据库
+    //   if (!state.isTemporaryChat.value) {
+    //     _repoDBApp.upsertChatMessage(lastMsg);
+    //   }
+    //
+    //   // 更新 Token 用量信息
+    //   _repoDBApp.upsertAIModelConfig(
+    //     state.currentAIModelConfig.value!
+    //       ..tokenInput += lastMsg.tokenInput
+    //       ..tokenOutput += lastMsg.tokenOutput,
+    //   );
+    // }
+
+    // 重置状态
+    _resetState();
+
+    // HapticUtil.error();
+  }
+
+  void _resetState() {
+    state.isResponding.value = false;
+    _reasoningStartTime = null;
+    _currentReasoningScrollFinished = true;
+    // _cancelToken = null;
   }
 
   /// 获取最后一个用户消息
@@ -288,6 +334,9 @@ class HomeLogic extends GetxController with GetSingleTickerProviderStateMixin {
   Future<void> _performChat(ChatMessage userMsg, bool retry) async {
     state.isResponding.value = true;
 
+    // 生成新的 CancelToken
+    _cancelToken = CancelToken();
+
     // 创建响应消息占位
     final responseMsg = _createResponseMessage(
       state.currentConversation.value!,
@@ -298,6 +347,7 @@ class HomeLogic extends GetxController with GetSingleTickerProviderStateMixin {
       userMsg: userMsg,
       responseMsg: responseMsg,
       state: state,
+      cancelToken: _cancelToken,
       isRetry: retry,
     ).sendMessage();
 
@@ -305,7 +355,7 @@ class HomeLogic extends GetxController with GetSingleTickerProviderStateMixin {
     _chatSubscription = chatStream.listen(
       (event) => _handleChatEvent(event, responseMsg),
       // onError: (error) => _finalizeResponse(responseMsg, false),
-      onDone: () => state.isResponding.value = false,
+      onDone: () => _resetState(),
     );
   }
 
@@ -533,6 +583,7 @@ class HomeLogic extends GetxController with GetSingleTickerProviderStateMixin {
         userMsg: ChatMessage(),
         responseMsg: ChatMessage(),
         state: state,
+        cancelToken: _cancelToken,
       ).topicNaming();
       if (success == true) {
         Get.find<DrawerLogic>().refreshList();

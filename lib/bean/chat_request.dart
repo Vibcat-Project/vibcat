@@ -1,3 +1,5 @@
+import 'package:dio/dio.dart';
+
 import '../data/bean/ai_model.dart';
 import '../data/schema/ai_model_config.dart';
 import '../data/schema/chat_message.dart';
@@ -8,6 +10,7 @@ class ChatRequest {
   final AIModel model;
   final Conversation conversation;
   final List<ChatMessage> messages;
+  final CancelToken? cancelToken;
   final Map<String, Object>? additionalParams;
 
   const ChatRequest({
@@ -15,6 +18,7 @@ class ChatRequest {
     required this.model,
     required this.conversation,
     required this.messages,
+    required this.cancelToken,
     this.additionalParams,
   });
 
@@ -23,14 +27,15 @@ class ChatRequest {
     AIModel? model,
     Conversation? conversation,
     List<ChatMessage>? messages,
+    CancelToken? cancelToken,
     Map<String, Object>? additionalParams,
-    bool? stream,
   }) {
     return ChatRequest(
       config: config ?? this.config,
       model: model ?? this.model,
       conversation: conversation ?? this.conversation,
       messages: messages ?? this.messages,
+      cancelToken: cancelToken ?? this.cancelToken,
       additionalParams: additionalParams ?? this.additionalParams,
     );
   }

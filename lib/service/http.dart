@@ -24,6 +24,7 @@ abstract class IHttpClient {
     Map<String, dynamic>? query,
     Map<String, dynamic>? headers,
     ResponseType? responseType,
+    CancelToken? cancelToken,
   });
 
   Future<HttpResponse<T>> post<T>(
@@ -32,6 +33,7 @@ abstract class IHttpClient {
     Map<String, dynamic>? query,
     Map<String, dynamic>? headers,
     ResponseType? responseType,
+    CancelToken? cancelToken,
   });
 
   Future<HttpResponse<T>> request<T>(
@@ -41,6 +43,7 @@ abstract class IHttpClient {
     Map<String, dynamic>? query,
     Map<String, dynamic>? headers,
     ResponseType? responseType,
+    CancelToken? cancelToken,
   });
 
   factory IHttpClient.create() => DioHttpClient();
@@ -70,6 +73,7 @@ class DioHttpClient implements IHttpClient {
     Map<String, dynamic>? query,
     Map<String, dynamic>? headers,
     ResponseType? responseType,
+    CancelToken? cancelToken,
   }) {
     return request(
       path,
@@ -77,6 +81,7 @@ class DioHttpClient implements IHttpClient {
       query: query,
       headers: headers,
       responseType: responseType,
+      cancelToken: cancelToken,
     );
   }
 
@@ -87,6 +92,7 @@ class DioHttpClient implements IHttpClient {
     Map<String, dynamic>? query,
     Map<String, dynamic>? headers,
     ResponseType? responseType,
+    CancelToken? cancelToken,
   }) {
     return request(
       path,
@@ -95,6 +101,7 @@ class DioHttpClient implements IHttpClient {
       query: query,
       headers: headers,
       responseType: responseType,
+      cancelToken: cancelToken,
     );
   }
 
@@ -106,6 +113,7 @@ class DioHttpClient implements IHttpClient {
     Map<String, dynamic>? query,
     Map<String, dynamic>? headers,
     ResponseType? responseType,
+    CancelToken? cancelToken,
   }) async {
     try {
       final response = await _dio.request(
@@ -117,6 +125,7 @@ class DioHttpClient implements IHttpClient {
           headers: headers,
           responseType: responseType,
         ),
+        cancelToken: cancelToken,
       );
 
       return HttpResponse<T>(
@@ -127,6 +136,15 @@ class DioHttpClient implements IHttpClient {
         raw: response,
       );
     } on DioException catch (e) {
+      if (CancelToken.isCancel(e)) {
+        return HttpResponse<T>(
+          statusCode: null,
+          data: null,
+          message: '',
+          raw: e,
+        );
+      }
+
       dynamic resData;
 
       if (e.response?.data is ResponseBody) {
