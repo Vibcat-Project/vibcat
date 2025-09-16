@@ -4,6 +4,8 @@
 
 <h2 align="center">Vibcat, AI Chat App.</h2>
 
+### 截图
+
 <details>
 <summary>APP 运行截图 点击展开/收起</summary>
 <p align="center">
@@ -23,3 +25,7 @@
   <img src="https://raw.githubusercontent.com/Vibcat-Project/vibcat/master/docs/images/screenshot-6.webp" width="400px">
 </p>
 </details>
+
+### 交流群
+
+- QQ群: 903600964
